@@ -114,6 +114,92 @@ void ListAllDeviceWithNoCOFromBundle(const std::unordered_map<std::string,
   }
 }
 
+hipError_t FatBinaryInfo::GetCompiledIsaUsingCOMGR(const std::vector<hip::Device*>& devices, std::string archName, size_t &deviceId) {
+
+  hipError_t hip_status = hipSuccess;
+  amd_comgr_data_t data_object;
+  amd_comgr_status_t comgr_status = AMD_COMGR_STATUS_SUCCESS;
+  amd_comgr_code_object_info_t* query_list_array = nullptr;
+  std::string isa_name_prefix;
+
+  // Create a data object, if it fails return error
+  if ((comgr_status = amd_comgr_create_data(AMD_COMGR_DATA_KIND_FATBIN, &data_object))
+                      != AMD_COMGR_STATUS_SUCCESS) {
+    LogPrintfError("Creating data object failed with status %d ", comgr_status);
+    hip_status = hipErrorInvalidValue;
+  }
+
+  if (image_ != nullptr) {
+    // Using the image ptr, map the data object.
+    if ((comgr_status = amd_comgr_set_data(data_object, 4096,
+                        reinterpret_cast<const char*>(image_))) != AMD_COMGR_STATUS_SUCCESS) {
+      LogPrintfError("Setting data from file slice failed with status %d ", comgr_status);
+      hip_status = hipErrorInvalidValue;
+    }
+  } else {
+    guarantee(false, "Cannot have image_ as nullptr");
+  }
+
+  // Find the unique number of ISAs needed for this COMGR query.
+  std::unordered_map<std::string, std::pair<size_t, size_t>> unique_isa_names;
+  for (size_t dev_idx = 0; dev_idx < devices.size(); ++dev_idx) {
+    std::string target_id = devices[dev_idx]->devices()[0]->isa().targetId();
+    std::string device_name = devices[dev_idx]->devices()[0]->isa().isaName();
+    if (archName == target_id) {
+      isa_name_prefix = device_name;
+    }
+    if (unique_isa_names.cend() == unique_isa_names.find(device_name)) {
+      unique_isa_names.insert({device_name, std::make_pair<size_t, size_t>(0,0)});
+    }
+  }
+
+  // Create a query list using COMGR info for unique ISAs.
+  query_list_array = new amd_comgr_code_object_info_t[unique_isa_names.size()];
+  std::cout <<"created query list array" <<std::endl;
+  auto isa_it = unique_isa_names.begin();
+  std::cout <<"unique isa names size: " << unique_isa_names.size() <<std::endl;
+  for (size_t isa_idx = 0; isa_idx < unique_isa_names.size(); ++isa_idx) {
+    auto it = std::next(isa_it, isa_idx);
+    query_list_array[isa_idx].isa = it->first.c_str();
+    query_list_array[isa_idx].size = 0;
+    query_list_array[isa_idx].offset = 0;
+  }
+
+  // Look up the code object info passing the query list.
+  if ((comgr_status = amd_comgr_lookup_code_object(data_object, query_list_array,
+                      unique_isa_names.size())) != AMD_COMGR_STATUS_SUCCESS) {
+    LogPrintfError("Setting data from file slice failed with status %d ", comgr_status);
+    hip_status = hipErrorInvalidValue;
+  std::string isa_token, full_isa_name;
+  for (size_t isa_idx = 0; isa_idx < unique_isa_names.size(); ++isa_idx) {
+    if (query_list_array[isa_idx].size > 0 && query_list_array[isa_idx].offset > 0) {
+      full_isa_name = query_list_array[isa_idx].isa;
+      char * query_list_isa = const_cast<char *>(query_list_array[isa_idx].isa);
+      isa_token = std::string(strtok(query_list_isa, ":"));
+      if (isa_token == isa_name_prefix) {
+        hip_status = hipSuccess;
+        break;
+      }
+    }
+  }
+
+  if (hip_status == hipSuccess) {
+    for (size_t dev_idx = 0; dev_idx < devices.size(); ++dev_idx) {
+      std::string device_name = devices[dev_idx]->devices()[0]->isa().isaName();
+      if (device_name == full_isa_name) {
+        deviceId = dev_idx;
+        break;
+      }
+    }
+  }
+
+  if (query_list_array) {
+    delete[] query_list_array;
+  }
+
+  return hip_status;
+}
+
 hipError_t FatBinaryInfo::ExtractFatBinaryUsingCOMGR(const std::vector<hip::Device*>& devices) {
   amd_comgr_data_t data_object;
   amd_comgr_status_t comgr_status = AMD_COMGR_STATUS_SUCCESS;
