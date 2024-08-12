@@ -126,6 +126,14 @@ bool NullDevice::create(const amd::Isa &isa) {
     return false;
   }
 
+  // why not add context in NullDevice (author: Abhishek Mishra)
+  amd::Context::Info info = {0};
+  std::vector<amd::Device*> devices;
+  devices.push_back(this);
+
+  // Create a dummy context
+  context_ = new amd::Context(devices, info);
+
   if (!ValidateComgr()) {
     LogPrintfError("Code object manager initialization failed for offline HSA device %s",
                    isa.targetId());
