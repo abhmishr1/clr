@@ -274,6 +274,7 @@ global:
     hipMemcpyParam2DAsync;
     __hipGetPCH;
     hipExtStreamGetCUMask;
+    hipGetKernelInfo;
     extern "C++" {
     hipCreateSurfaceObject*;
     hipDestroySurfaceObject*;
