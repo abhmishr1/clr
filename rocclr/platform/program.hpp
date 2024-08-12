@@ -201,6 +201,8 @@ class Program : public RuntimeObject {
   //! Return the binary image.
   const binary_t& binary(const Device& device) { return binary_[&device]; }
 
+  const binary_t& binary(const Device& device) const { return binary_.at(&device); }
+
   //! Return the program kernel names
   const std::string& kernelNames();
 
