@@ -103,6 +103,8 @@ class PlatformState {
   std::shared_ptr<UniqueFD> GetUniqueFileHandle(const std::string& file_path);
   bool CloseUniqueFileHandle(const std::shared_ptr<UniqueFD>& ufd);
 
+  hipError_t getDeviceIdFromArch(std::string archName, int& deviceId);
+
   size_t UfdMapSize() const { return ufd_map_.size(); }
 
  private:

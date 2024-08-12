@@ -683,6 +683,20 @@ void PlatformState::init() {
   }
 }
 
+hipError_t PlatformState::getDeviceIdFromArch(std::string archName, int &deviceId) {
+
+  hipError_t hip_error;
+  size_t device_id;
+
+  for (auto& it : statCO_.modules_) {
+    hip_error = it.second->GetCompiledIsaUsingCOMGR(g_devices, archName, device_id);
+  }
+
+  deviceId = g_devices[device_id]->deviceId();
+
+  return hip_error;
+}
+
 hipError_t PlatformState::loadModule(hipModule_t* module, const char* fname, const void* image) {
   if (module == nullptr) {
     return hipErrorInvalidValue;
