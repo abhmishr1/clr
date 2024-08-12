@@ -840,3 +840,40 @@ hipError_t hipModuleGetTexRef(textureReference** texRef, hipModule_t hmod, const
 
   HIP_RETURN(err);
 }
+
+hipError_t hipGetKernelInfo(const void* hostFunction, hipKernelInfo* kernelData, const char * archName) {
+  HIP_INIT_API(hipGetKernelInfo, hostFunction, kernelData, archName);
+
+  int deviceId;
+  hipError_t hip_error;
+
+  hip_error = PlatformState::instance().getDeviceIdFromArch(archName, deviceId);
+
+  if (hip_error != hipSuccess) {
+    HIP_RETURN(hip_error);
+  }
+
+  hipFunction_t func = nullptr;
+
+  hip_error = PlatformState::instance().getStatFunc(&func, hostFunction, deviceId);
+  hip::DeviceFunc* devFunc = hip::DeviceFunc::asFunction(func);
+  amd::Kernel* kernel = devFunc->kernel();
+
+  auto devKernel =  kernel->getDeviceKernel(*g_devices.at(deviceId)->devices()[0]);
+
+  const amd::Program &prog = kernel->program();
+  auto bin_data = prog.binary(*g_devices.at(deviceId)->devices()[0]);
+
+  auto binary = std::get<0>(bin_data);
+	size_t bin_sz = std::get<1>(bin_data);
+
+  vector_uint8 bin_vec;
+  PlatformState::instance().create_vector_uint8(&bin_vec, bin_sz);
+  PlatformState::instance().add_data_vector_uint8(&bin_vec, binary);
+
+  kernelData->binary = bin_vec;
+
+  PlatformState::instance().destroy_vector_uint8(&bin_vec);
+
+  HIP_RETURN(hip_error);
+}
