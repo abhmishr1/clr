@@ -114,7 +114,16 @@ void ListAllDeviceWithNoCOFromBundle(const std::unordered_map<std::string,
   }
 }
 
-hipError_t FatBinaryInfo::GetCompiledIsaUsingCOMGR(const std::vector<hip::Device*>& devices, std::string archName, size_t &deviceId) {
+void checkErrorCOMGR(amd_comgr_status_t status, const char *str) {
+  if (status != AMD_COMGR_STATUS_SUCCESS) {
+    const char *statusStr;
+    printf("FAILED: %s\n", str);
+    status = amd_comgr_status_string(status, &statusStr);
+    if (status == AMD_COMGR_STATUS_SUCCESS)
+      printf(" REASON: %s\n", statusStr);
+  }
+}
+
 
   hipError_t hip_status = hipSuccess;
   amd_comgr_data_t data_object;
