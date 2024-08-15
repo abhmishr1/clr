@@ -245,7 +245,11 @@ hipError_t FatBinaryInfo::ExtractKernelBinaryUsingCOMGR(const std::vector<hip::D
       std::string device_name = devices[dev_idx]->devices()[0]->isa().isaName();
       if (device_name == full_isa_name) {
         deviceId = dev_idx;
+        hip_status = hipSuccess;
         break;
+      }
+      else {
+        hip_status = hipErrorInvalidValue;
       }
     }
   }
