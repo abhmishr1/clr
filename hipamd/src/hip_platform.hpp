@@ -41,6 +41,13 @@ struct UniqueFD {
   const size_t fsize_;             //!< File Size
 };
 
+//kernel binary struct
+struct kernelBin
+{
+  const uint8_t* data;
+  size_t         size;
+};
+
 class PlatformState {
   amd::Monitor lock_{"Guards PlatformState globals", true};
 
