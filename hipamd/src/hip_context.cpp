@@ -33,7 +33,7 @@ amd::Context* host_context = nullptr;
 
 //init() is only to be called from the HIP_INIT macro only once
 void init(bool* status) {
-  amd::IS_HIP = true;
+  amd::IS_HIP = false;
   GPU_NUM_MEM_DEPENDENCY = 0;
 #if DISABLE_DIRECT_DISPATCH
   constexpr bool kDirectDispatch = false;
@@ -48,7 +48,7 @@ void init(bool* status) {
   ClPrint(amd::LOG_INFO, amd::LOG_INIT, "Direct Dispatch: %d", AMD_DIRECT_DISPATCH);
 
 
-  const std::vector<amd::Device*>& devices = amd::Device::getDevices(CL_DEVICE_TYPE_GPU, false);
+  const std::vector<amd::Device*>& devices = amd::Device::getDevices(CL_DEVICE_TYPE_GPU, true);
 
   for (unsigned int i=0; i<devices.size(); i++) {
     // Enable active wait on the device by default
