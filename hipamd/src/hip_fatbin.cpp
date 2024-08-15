@@ -230,7 +230,11 @@ hipError_t FatBinaryInfo::ExtractKernelBinaryUsingCOMGR(const std::vector<hip::D
       char * query_list_isa = const_cast<char *>(query_list_array[isa_idx].isa);
       isa_token = std::string(strtok(query_list_isa, ":"));
       if (isa_token == isa_name_prefix) {
-        hip_status = hipSuccess;
+        comgr_status =  amd_comgr_get_kernel_data(reinterpret_cast<address>(const_cast<void*>(image_)) + query_list_array[isa_idx].offset, query_list_array[isa_idx].size, kernelName.c_str(), kernel_size, kernel_data);
+        checkErrorCOMGR(comgr_status, "amd_comgr_get_kernel_data");
+        if (comgr_status == AMD_COMGR_STATUS_SUCCESS) {
+          hip_status = hipSuccess;
+        }
         break;
       }
     }
