@@ -170,10 +170,13 @@ amd_comgr_status_t amd_comgr_get_kernel_data(void* image, size_t size,
 hipError_t FatBinaryInfo::ExtractKernelBinaryUsingCOMGR(const std::vector<hip::Device*>& devices, std::string kernelName, std::string archName, size_t &deviceId, size_t &kernel_size, uint8_t* &kernel_data) {
 
   hipError_t hip_status = hipSuccess;
+
   amd_comgr_data_t data_object;
   amd_comgr_status_t comgr_status = AMD_COMGR_STATUS_SUCCESS;
   amd_comgr_code_object_info_t* query_list_array = nullptr;
+
   std::string isa_name_prefix;
+  std::string isa_token, full_isa_name;
 
   // Create a data object, if it fails return error
   if ((comgr_status = amd_comgr_create_data(AMD_COMGR_DATA_KIND_FATBIN, &data_object))
@@ -194,7 +197,7 @@ hipError_t FatBinaryInfo::ExtractKernelBinaryUsingCOMGR(const std::vector<hip::D
   }
 
   // Find the unique number of ISAs needed for this COMGR query.
-  std::unordered_map<std::string, std::pair<size_t, size_t>> unique_isa_names;
+  std::unordered_map<std::string, std::pair<size_t, uint64_t>> unique_isa_names;
   for (size_t dev_idx = 0; dev_idx < devices.size(); ++dev_idx) {
     std::string target_id = devices[dev_idx]->devices()[0]->isa().targetId();
     std::string device_name = devices[dev_idx]->devices()[0]->isa().isaName();
@@ -202,15 +205,13 @@ hipError_t FatBinaryInfo::ExtractKernelBinaryUsingCOMGR(const std::vector<hip::D
       isa_name_prefix = device_name;
     }
     if (unique_isa_names.cend() == unique_isa_names.find(device_name)) {
-      unique_isa_names.insert({device_name, std::make_pair<size_t, size_t>(0,0)});
+      unique_isa_names.insert({device_name, std::make_pair<size_t, uint64_t>(0,0)});
     }
   }
 
   // Create a query list using COMGR info for unique ISAs.
   query_list_array = new amd_comgr_code_object_info_t[unique_isa_names.size()];
-  std::cout <<"created query list array" <<std::endl;
   auto isa_it = unique_isa_names.begin();
-  std::cout <<"unique isa names size: " << unique_isa_names.size() <<std::endl;
   for (size_t isa_idx = 0; isa_idx < unique_isa_names.size(); ++isa_idx) {
     auto it = std::next(isa_it, isa_idx);
     query_list_array[isa_idx].isa = it->first.c_str();
@@ -223,7 +224,8 @@ hipError_t FatBinaryInfo::ExtractKernelBinaryUsingCOMGR(const std::vector<hip::D
                       unique_isa_names.size())) != AMD_COMGR_STATUS_SUCCESS) {
     LogPrintfError("Setting data from file slice failed with status %d ", comgr_status);
     hip_status = hipErrorInvalidValue;
-  std::string isa_token, full_isa_name;
+  }
+
   for (size_t isa_idx = 0; isa_idx < unique_isa_names.size(); ++isa_idx) {
     if (query_list_array[isa_idx].size > 0 && query_list_array[isa_idx].offset > 0) {
       full_isa_name = query_list_array[isa_idx].isa;
