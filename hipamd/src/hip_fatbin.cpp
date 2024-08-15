@@ -167,6 +167,7 @@ amd_comgr_status_t amd_comgr_get_kernel_data(void* image, size_t size,
   return comgr_status;
 }
 
+hipError_t FatBinaryInfo::ExtractKernelBinaryUsingCOMGR(const std::vector<hip::Device*>& devices, std::string kernelName, std::string archName, size_t &deviceId, size_t &kernel_size, uint8_t* &kernel_data) {
 
   hipError_t hip_status = hipSuccess;
   amd_comgr_data_t data_object;
