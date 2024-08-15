@@ -683,7 +683,7 @@ void PlatformState::init() {
   }
 }
 
-hipError_t PlatformState::getDeviceIdFromArch(std::string archName, int &deviceId) {
+hipError_t PlatformState::getKernelBinaryAndDeviceId(const void* hostFunction, std::string archName, int &deviceId, kernelBin* kernel_binary) {
 
   hipError_t hip_error;
   size_t device_id;
