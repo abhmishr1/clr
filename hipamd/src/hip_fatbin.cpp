@@ -124,6 +124,49 @@ void checkErrorCOMGR(amd_comgr_status_t status, const char *str) {
   }
 }
 
+amd_comgr_status_t amd_comgr_get_kernel_data(void* image, size_t size,
+                                            const char * kernel_name,
+                                            size_t &kernel_size,
+                                            uint8_t * &kernel_data)
+{
+  amd_comgr_data_t isa_data_object;
+  amd_comgr_symbol_t kernel_symbol;
+  amd_comgr_symbolizer_info_t symbolizer;
+  amd_comgr_status_t comgr_status = AMD_COMGR_STATUS_SUCCESS;
+
+  comgr_status = amd_comgr_create_data(AMD_COMGR_DATA_KIND_EXECUTABLE, &isa_data_object);
+  checkErrorCOMGR(comgr_status, "amd_comgr_create_data");
+
+  comgr_status = amd_comgr_set_data(isa_data_object, size,
+                    reinterpret_cast<const char*>(image));
+  checkErrorCOMGR(comgr_status, "amd_comgr_set_data");
+
+  uint64_t vm_addr;
+  uint64_t code_object_offset;
+  uint64_t slice_size;
+  bool nobits = true;
+
+  comgr_status = amd_comgr_symbol_lookup(isa_data_object, kernel_name, &kernel_symbol);
+  checkErrorCOMGR(comgr_status, "amd_comgr_symbol_lookup");
+
+  comgr_status = amd_comgr_symbol_get_info(kernel_symbol,
+                                          AMD_COMGR_SYMBOL_INFO_SIZE,
+                                          (void *)&kernel_size);
+  checkErrorCOMGR(comgr_status, "amd_comgr_symbol_get_info_size");
+
+  comgr_status = amd_comgr_symbol_get_info(kernel_symbol,
+                                          AMD_COMGR_SYMBOL_INFO_VALUE,
+                                          (void *)&vm_addr);
+  checkErrorCOMGR(comgr_status, "amd_comgr_symbol_get_info_value");
+
+  comgr_status = amd_comgr_map_elf_virtual_address_to_code_object_offset(isa_data_object, vm_addr, &code_object_offset, &slice_size, &nobits);
+  checkErrorCOMGR(comgr_status, "amd_comgr_map_elf_virtual_address_to_code_object_offset");
+
+  kernel_data = (uint8_t *) (image) + code_object_offset;
+
+  return comgr_status;
+}
+
 
   hipError_t hip_status = hipSuccess;
   amd_comgr_data_t data_object;
