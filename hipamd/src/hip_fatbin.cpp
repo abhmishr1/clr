@@ -403,9 +403,10 @@ hipError_t FatBinaryInfo::ExtractFatBinaryUsingCOMGR(const std::vector<hip::Devi
       // If the size is 0, then COMGR API could not find the CO for this GPU device/ISA
       if (dev_it->second.first == 0) {
         LogPrintfError("Cannot find CO in the bundle for ISA: %s \n", device_name.c_str());
-        hip_status = hipErrorNoBinaryForGpu;
-        ListAllDeviceWithNoCOFromBundle(unique_isa_names);
-        break;
+        // Empty fatbin should be okay (author: Abhishek Mishra)
+        // hip_status = hipErrorNoBinaryForGpu;
+        // ListAllDeviceWithNoCOFromBundle(unique_isa_names);
+        // break;
       }
       guarantee(unique_isa_names.cend() != dev_it,
                 "Cannot find the device name in the unique device name");
