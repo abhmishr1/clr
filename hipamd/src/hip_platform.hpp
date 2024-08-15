@@ -63,7 +63,7 @@ class PlatformState {
   void init();
 
   void create_vector_uint8 (vector_uint8 *vec, size_t limit) {
-    vec->size = 0;
+    vec->size = limit;
     vec->limit = limit;
     vec->data = (uint8_t*) malloc(limit * sizeof(uint8_t));
   }
@@ -75,7 +75,9 @@ class PlatformState {
   }
 
   void add_data_vector_uint8 (vector_uint8 *vec, const uint8_t* new_data) {
-    vec->data[vec->size] = *new_data;
+    for (int i = 0; i < vec->size; i++) {
+      vec->data[i] = new_data[i];
+    }
   }
 
   // Dynamic Code Objects functions
