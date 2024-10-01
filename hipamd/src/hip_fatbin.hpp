@@ -63,6 +63,8 @@ public:
   FatBinaryInfo(const char* fname, const void* image);
   ~FatBinaryInfo();
 
+  hipError_t ExtractKernelBinaryUsingCOMGR(const std::vector<hip::Device*>& devices, std::string kernelName, std::string archName, size_t &deviceId, size_t &kernel_size, uint8_t* &kernel_data);
+
   // Loads Fat binary from file or image, unbundles COs for devices.
   hipError_t ExtractFatBinaryUsingCOMGR(const std::vector<hip::Device*>& devices);
 

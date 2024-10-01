@@ -118,6 +118,155 @@ void ListAllDeviceWithNoCOFromBundle(const std::unordered_map<std::string,
   }
 }
 
+void checkErrorCOMGR(amd_comgr_status_t status, const char *str) {
+  if (status != AMD_COMGR_STATUS_SUCCESS) {
+    const char *statusStr;
+    printf("FAILED: %s\n", str);
+    status = amd_comgr_status_string(status, &statusStr);
+    if (status == AMD_COMGR_STATUS_SUCCESS)
+      printf(" REASON: %s\n", statusStr);
+  }
+}
+
+amd_comgr_status_t amd_comgr_get_kernel_data(void* image, size_t size,
+                                            const char * kernel_name,
+                                            size_t &kernel_size,
+                                            uint8_t * &kernel_data)
+{
+  amd_comgr_data_t isa_data_object;
+  amd_comgr_symbol_t kernel_symbol;
+  amd_comgr_symbolizer_info_t symbolizer;
+  amd_comgr_status_t comgr_status = AMD_COMGR_STATUS_SUCCESS;
+
+  comgr_status = amd_comgr_create_data(AMD_COMGR_DATA_KIND_EXECUTABLE, &isa_data_object);
+  checkErrorCOMGR(comgr_status, "amd_comgr_create_data");
+
+  comgr_status = amd_comgr_set_data(isa_data_object, size,
+                    reinterpret_cast<const char*>(image));
+  checkErrorCOMGR(comgr_status, "amd_comgr_set_data");
+
+  uint64_t vm_addr;
+  uint64_t code_object_offset;
+  uint64_t slice_size;
+  bool nobits = true;
+
+  comgr_status = amd_comgr_symbol_lookup(isa_data_object, kernel_name, &kernel_symbol);
+  checkErrorCOMGR(comgr_status, "amd_comgr_symbol_lookup");
+
+  comgr_status = amd_comgr_symbol_get_info(kernel_symbol,
+                                          AMD_COMGR_SYMBOL_INFO_SIZE,
+                                          (void *)&kernel_size);
+  checkErrorCOMGR(comgr_status, "amd_comgr_symbol_get_info_size");
+
+  comgr_status = amd_comgr_symbol_get_info(kernel_symbol,
+                                          AMD_COMGR_SYMBOL_INFO_VALUE,
+                                          (void *)&vm_addr);
+  checkErrorCOMGR(comgr_status, "amd_comgr_symbol_get_info_value");
+
+  comgr_status = amd_comgr_map_elf_virtual_address_to_code_object_offset(isa_data_object, vm_addr, &code_object_offset, &slice_size, &nobits);
+  checkErrorCOMGR(comgr_status, "amd_comgr_map_elf_virtual_address_to_code_object_offset");
+
+  kernel_data = (uint8_t *) (image) + code_object_offset;
+
+  return comgr_status;
+}
+
+hipError_t FatBinaryInfo::ExtractKernelBinaryUsingCOMGR(const std::vector<hip::Device*>& devices, std::string kernelName, std::string archName, size_t &deviceId, size_t &kernel_size, uint8_t* &kernel_data) {
+
+  hipError_t hip_status = hipSuccess;
+
+  amd_comgr_data_t data_object;
+  amd_comgr_status_t comgr_status = AMD_COMGR_STATUS_SUCCESS;
+  amd_comgr_code_object_info_t* query_list_array = nullptr;
+
+  std::string isa_name_prefix;
+  std::string isa_token, full_isa_name;
+
+  // Create a data object, if it fails return error
+  if ((comgr_status = amd_comgr_create_data(AMD_COMGR_DATA_KIND_FATBIN, &data_object))
+                      != AMD_COMGR_STATUS_SUCCESS) {
+    LogPrintfError("Creating data object failed with status %d ", comgr_status);
+    hip_status = hipErrorInvalidValue;
+  }
+
+  if (image_ != nullptr) {
+    // Using the image ptr, map the data object.
+    if ((comgr_status = amd_comgr_set_data(data_object, 4096,
+                        reinterpret_cast<const char*>(image_))) != AMD_COMGR_STATUS_SUCCESS) {
+      LogPrintfError("Setting data from file slice failed with status %d ", comgr_status);
+      hip_status = hipErrorInvalidValue;
+    }
+  } else {
+    guarantee(false, "Cannot have image_ as nullptr");
+  }
+
+  // Find the unique number of ISAs needed for this COMGR query.
+  std::unordered_map<std::string, std::pair<size_t, uint64_t>> unique_isa_names;
+  for (size_t dev_idx = 0; dev_idx < devices.size(); ++dev_idx) {
+    std::string target_id = devices[dev_idx]->devices()[0]->isa().targetId();
+    std::string device_name = devices[dev_idx]->devices()[0]->isa().isaName();
+    if (archName == target_id) {
+      isa_name_prefix = device_name;
+    }
+    if (unique_isa_names.cend() == unique_isa_names.find(device_name)) {
+      unique_isa_names.insert({device_name, std::make_pair<size_t, uint64_t>(0,0)});
+    }
+  }
+
+  // Create a query list using COMGR info for unique ISAs.
+  query_list_array = new amd_comgr_code_object_info_t[unique_isa_names.size()];
+  auto isa_it = unique_isa_names.begin();
+  for (size_t isa_idx = 0; isa_idx < unique_isa_names.size(); ++isa_idx) {
+    auto it = std::next(isa_it, isa_idx);
+    query_list_array[isa_idx].isa = it->first.c_str();
+    query_list_array[isa_idx].size = 0;
+    query_list_array[isa_idx].offset = 0;
+  }
+
+  // Look up the code object info passing the query list.
+  if ((comgr_status = amd_comgr_lookup_code_object(data_object, query_list_array,
+                      unique_isa_names.size())) != AMD_COMGR_STATUS_SUCCESS) {
+    LogPrintfError("Setting data from file slice failed with status %d ", comgr_status);
+    hip_status = hipErrorInvalidValue;
+  }
+
+  for (size_t isa_idx = 0; isa_idx < unique_isa_names.size(); ++isa_idx) {
+    if (query_list_array[isa_idx].size > 0 && query_list_array[isa_idx].offset > 0) {
+      full_isa_name = query_list_array[isa_idx].isa;
+      char * query_list_isa = const_cast<char *>(query_list_array[isa_idx].isa);
+      isa_token = std::string(strtok(query_list_isa, ":"));
+      if (isa_token == isa_name_prefix) {
+        comgr_status =  amd_comgr_get_kernel_data(reinterpret_cast<address>(const_cast<void*>(image_)) + query_list_array[isa_idx].offset, query_list_array[isa_idx].size, kernelName.c_str(), kernel_size, kernel_data);
+        checkErrorCOMGR(comgr_status, "amd_comgr_get_kernel_data");
+        if (comgr_status == AMD_COMGR_STATUS_SUCCESS) {
+          hip_status = hipSuccess;
+        }
+        break;
+      }
+    }
+  }
+
+  if (hip_status == hipSuccess) {
+    for (size_t dev_idx = 0; dev_idx < devices.size(); ++dev_idx) {
+      std::string device_name = devices[dev_idx]->devices()[0]->isa().isaName();
+      if (device_name == full_isa_name) {
+        deviceId = dev_idx;
+        hip_status = hipSuccess;
+        break;
+      }
+      else {
+        hip_status = hipErrorInvalidValue;
+      }
+    }
+  }
+
+  if (query_list_array) {
+    delete[] query_list_array;
+  }
+
+  return hip_status;
+}
+
 hipError_t FatBinaryInfo::ExtractFatBinaryUsingCOMGR(const std::vector<hip::Device*>& devices) {
   amd_comgr_data_t data_object {0};
   amd_comgr_status_t comgr_status = AMD_COMGR_STATUS_SUCCESS;
