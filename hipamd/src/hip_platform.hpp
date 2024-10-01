@@ -41,6 +41,13 @@ struct UniqueFD {
   const size_t fsize_;             //!< File Size
 };
 
+//kernel binary struct
+struct kernelBin
+{
+  const uint8_t* data;
+  size_t         size;
+};
+
 namespace hip {
 class PlatformState {
   // Guards PlatformState globals
@@ -57,6 +64,24 @@ class PlatformState {
 
  public:
   void init();
+
+  void create_vector_uint8 (vector_uint8 *vec, size_t limit) {
+    vec->size = limit;
+    vec->limit = limit;
+    vec->data = (uint8_t*) malloc(limit * sizeof(uint8_t));
+  }
+
+  void destroy_vector_uint8 (vector_uint8 *vec) {
+    vec->size = 0;
+    vec->limit = 0;
+    free(vec->data);
+  }
+
+  void add_data_vector_uint8 (vector_uint8 *vec, const uint8_t* new_data) {
+    for (int i = 0; i < vec->size; i++) {
+      vec->data[i] = new_data[i];
+    }
+  }
 
   // Dynamic Code Objects functions
   hipError_t loadModule(hipModule_t* module, const char* fname, const void* image = nullptr);
@@ -109,6 +134,8 @@ class PlatformState {
 
   std::shared_ptr<UniqueFD> GetUniqueFileHandle(const std::string& file_path);
   bool CloseUniqueFileHandle(const std::shared_ptr<UniqueFD>& ufd);
+
+  hipError_t getKernelBinaryAndDeviceId(const void* hostFunction, std::string archName, int& deviceId, kernelBin* kernel_binary);
 
   size_t UfdMapSize() const { return ufd_map_.size(); }
 

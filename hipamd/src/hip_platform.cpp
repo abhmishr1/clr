@@ -733,6 +733,27 @@ void PlatformState::init() {
   }
 }
 
+hipError_t PlatformState::getKernelBinaryAndDeviceId(const void* hostFunction, std::string archName, int &deviceId, kernelBin* kernel_binary) {
+
+  hipError_t hip_error;
+  size_t device_id;
+  size_t kernel_bin_sz;
+  uint8_t* kernel_bin_data;
+
+  const auto func_it = statCO_.functions_.find(hostFunction);
+  std::string kernelName = func_it->second->name();
+
+  for (auto& it : statCO_.modules_) {
+    hip_error = it.second->ExtractKernelBinaryUsingCOMGR(g_devices, kernelName, archName, device_id, kernel_bin_sz, kernel_bin_data);
+  }
+
+  deviceId = g_devices[device_id]->deviceId();
+  kernel_binary->data = kernel_bin_data;
+  kernel_binary->size = kernel_bin_sz;
+
+  return hip_error;
+}
+
 hipError_t PlatformState::loadModule(hipModule_t* module, const char* fname, const void* image) {
   if (module == nullptr) {
     return hipErrorInvalidValue;
