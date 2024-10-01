@@ -916,4 +916,31 @@ hipError_t hipModuleGetTexRef(textureReference** texRef, hipModule_t hmod, const
 
   HIP_RETURN(err);
 }
+
+hipError_t hipGetKernelInfo(const void* hostFunction, hipKernelInfo* kernelData, const char * archName) {
+  HIP_INIT_API(hipGetKernelInfo, hostFunction, kernelData, archName);
+
+  int        deviceId;
+  kernelBin  kernel_binary;
+  hipError_t hip_error;
+
+  hip_error = PlatformState::instance().getKernelBinaryAndDeviceId(hostFunction, archName, deviceId, &kernel_binary);
+
+  if (hip_error != hipSuccess) {
+    HIP_RETURN(hip_error);
+  }
+
+  hipFunction_t func = nullptr;
+
+  hip_error = PlatformState::instance().getStatFunc(&func, hostFunction, deviceId);
+  hip::DeviceFunc* devFunc = hip::DeviceFunc::asFunction(func);
+  amd::Kernel* kernel = devFunc->kernel();
+
+  auto devKernel =  kernel->getDeviceKernel(*g_devices.at(deviceId)->devices()[0]);
+
+  PlatformState::instance().create_vector_uint8(&(kernelData->binary), kernel_binary.size);
+  PlatformState::instance().add_data_vector_uint8(&(kernelData->binary), kernel_binary.data);
+
+  HIP_RETURN(hip_error);
+}
 }  // namespace hip
