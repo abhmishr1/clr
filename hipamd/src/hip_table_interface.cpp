@@ -1225,6 +1225,9 @@ hipError_t hipModuleGetGlobal(hipDeviceptr_t* dptr, size_t* bytes, hipModule_t h
 hipError_t hipModuleGetTexRef(textureReference** texRef, hipModule_t hmod, const char* name) {
   return hip::GetHipDispatchTable()->hipModuleGetTexRef_fn(texRef, hmod, name);
 }
+hipError_t hipGetKernelInfo(const void* hostFunction, hipKernelInfo* kernelData, const char * archName) {
+  return hip::GetHipDispatchTable()->hipGetKernelInfo_fn(hostFunction, kernelData, archName);
+}
 hipError_t hipModuleLaunchCooperativeKernel(hipFunction_t f, unsigned int gridDimX,
                                             unsigned int gridDimY, unsigned int gridDimZ,
                                             unsigned int blockDimX, unsigned int blockDimY,
