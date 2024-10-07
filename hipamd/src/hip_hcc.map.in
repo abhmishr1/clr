@@ -276,6 +276,7 @@ global:
     __hipGetPCH;
     hipExtStreamGetCUMask;
     hipGetKernelInfo;
+    hipFreeKernelInfo;
     extern "C++" {
     hipCreateSurfaceObject*;
     hipDestroySurfaceObject*;

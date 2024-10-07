@@ -937,6 +937,49 @@ hipError_t hipGetKernelInfo(const void* hostFunction, hipKernelInfo* kernelData,
   amd::Kernel* kernel = devFunc->kernel();
 
   auto devKernel =  kernel->getDeviceKernel(*g_devices.at(deviceId)->devices()[0]);
+  // std::cout << "dev kernel name: " << devKernel->name() << std::endl;
+
+  amd::Program &program = kernel->program();
+  auto devProgram =  program.getDeviceProgram(*g_devices.at(deviceId)->devices()[0]);
+
+  std::string demangledName;
+  devProgram->getDemangledName(devKernel->name(), demangledName);
+  std::cout << "demangled name: " << demangledName << std::endl;
+
+  #if defined(USE_COMGR_LIBRARY)
+  // amd_comgr_metadata_node_t kernelMetaNode;
+  // devProgram->getKernelMetadata(devKernel->name(), &kernelMetaNode);
+
+  // amd::Kernel::KernelFieldMapV3Type kernel_field_map;
+
+  // amd_comgr_status_t status;
+  // std::string metaBuf;
+  // status = devKernel->getMetaBuf(kernelMetaNode, &metaBuf);
+  // std::cout << "meta buf: " << metaBuf << std::endl;
+
+  // std::cout << "kernel_code_handle: " << devKernel->KernelCodeHandle() << std::endl;
+  std::cout << ".name: " << devKernel->name() << std::endl;
+  std::cout << ".group_segment_fixed_size: " << devKernel->WorkgroupGroupSegmentByteSize() << std::endl;
+  std::cout << ".kernarg_segment_align: " << devKernel->KernargSegmentAlignment() << std::endl;
+  std::cout << ".kernarg_segment_size: " << devKernel->KernargSegmentByteSize() << std::endl;
+  std::cout << ".max_flat_workgroup_size: " << devKernel->workGroupInfo()->size_ << std::endl;
+  std::cout << ".private_segment_fixed_size: " << devKernel->WorkitemPrivateSegmentByteSize() << std::endl;
+  std::cout << ".sgpr_count: " << devKernel->workGroupInfo()->usedSGPRs_ << std::endl;
+  std::cout << ".uniform_work_group_size: " << devKernel->getUniformWorkGroupSize() << std::endl;
+  std::cout << ".vgpr_count: " << devKernel->workGroupInfo()->usedVGPRs_ << std::endl;
+  std::cout << ".wavefront_size: " << devKernel->workGroupInfo()->wavefrontSize_<< std::endl;
+  std::cout << ".workgroup_processor_mode: " << devKernel->workGroupInfo()->isWGPMode_ << std::endl;
+
+  #endif
+
+  const amd::KernelSignature& signature = kernel->signature();
+  std::cout << ".args: " << signature.numParametersAll() << std::endl;
+
+  for (size_t i = 0; i < signature.numParametersAll(); ++i) {
+    const amd::KernelParameterDescriptor& desc = signature.at(i);
+    std::cout << " - .size: " << desc.size_<< std::endl;
+    std::cout << "   .offset: " << desc.offset_ << std::endl;
+  }
 
   hip_error = PlatformState::instance().uint8CreateVector(&(kernelData->binary), kernel_binary.size);
 

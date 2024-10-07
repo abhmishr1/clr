@@ -481,3 +481,4 @@ hipDrvGraphMemcpyNodeSetParams
 hipDrvGraphMemcpyNodeGetParams
 hipExtHostAlloc
 hipGetKernelInfo
+hipFreeKernelInfo

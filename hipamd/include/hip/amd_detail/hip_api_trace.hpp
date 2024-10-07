@@ -634,6 +634,7 @@ typedef hipError_t (*t_hipModuleGetTexRef)(textureReference** texRef, hipModule_
                                            const char* name);
 typedef hipError_t (*t_hipGetKernelInfo)(const void* hostFunction, hipKernelInfo* kernelData,
                                             const char * archName);
+typedef hipError_t (*t_hipFreeKernelInfo)(hipKernelInfo* kernelData);
 typedef hipError_t (*t_hipModuleLaunchCooperativeKernel)(
     hipFunction_t f, unsigned int gridDimX, unsigned int gridDimY, unsigned int gridDimZ,
     unsigned int blockDimX, unsigned int blockDimY, unsigned int blockDimZ,
@@ -1525,6 +1526,7 @@ struct HipDispatchTable {
   // HIP_RUNTIME_API_TABLE_STEP_VERSION == 7
 
   t_hipGetKernelInfo hipGetKernelInfo_fn;
+  t_hipFreeKernelInfo hipFreeKernelInfo_fn;
 
   // ******************************************************************************************* //
   //
