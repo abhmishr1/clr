@@ -65,23 +65,10 @@ class PlatformState {
  public:
   void init();
 
-  void create_vector_uint8 (vector_uint8 *vec, size_t limit) {
-    vec->size = limit;
-    vec->limit = limit;
-    vec->data = (uint8_t*) malloc(limit * sizeof(uint8_t));
-  }
-
-  void destroy_vector_uint8 (vector_uint8 *vec) {
-    vec->size = 0;
-    vec->limit = 0;
-    free(vec->data);
-  }
-
-  void add_data_vector_uint8 (vector_uint8 *vec, const uint8_t* new_data) {
-    for (int i = 0; i < vec->size; i++) {
-      vec->data[i] = new_data[i];
-    }
-  }
+  // uint8 vector functions
+  hipError_t uint8CreateVector(vector_uint8 *vec, size_t limit);
+  hipError_t uint8VectorPushBack(vector_uint8 *vec, const uint8_t value);
+  hipError_t uint8FreeVector(vector_uint8 *vec);
 
   // Dynamic Code Objects functions
   hipError_t loadModule(hipModule_t* module, const char* fname, const void* image = nullptr);

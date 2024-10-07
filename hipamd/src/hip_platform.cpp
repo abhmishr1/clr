@@ -754,6 +754,44 @@ hipError_t PlatformState::getKernelBinaryAndDeviceId(const void* hostFunction, s
   return hip_error;
 }
 
+hipError_t PlatformState::uint8CreateVector(vector_uint8 *vec, size_t limit) {
+
+  vec->data = (uint8_t*) malloc(limit * sizeof(uint8_t));
+  if (vec->data == NULL) {
+      fprintf(stderr, "uint8 vector memory allocation failed\n");
+      exit(1);
+  }
+
+  vec->limit = limit;
+  vec->size = 0;
+
+  return hipSuccess;
+}
+
+hipError_t PlatformState::uint8VectorPushBack(vector_uint8 *vec, const uint8_t value) {
+
+  if (vec->size == vec->limit) {
+    // resize the vector if it's full
+    vec->limit *= 2;
+    vec->data = (uint8_t *)realloc(vec->data, sizeof(uint8_t) * vec->limit);
+    if (vec->data == NULL) {
+        fprintf(stderr, "uint8 vector memory reallocation failed\n");
+        exit(1);
+    }
+  }
+
+  vec->data[vec->size++] = value;
+
+  return hipSuccess;
+}
+
+hipError_t PlatformState::uint8FreeVector(vector_uint8 *vec) {
+  free(vec->data);
+
+  return hipSuccess;
+}
+
+
 hipError_t PlatformState::loadModule(hipModule_t* module, const char* fname, const void* image) {
   if (module == nullptr) {
     return hipErrorInvalidValue;
