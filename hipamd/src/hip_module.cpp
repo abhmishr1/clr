@@ -938,6 +938,15 @@ hipError_t hipGetKernelInfo(const void* hostFunction, hipKernelInfo* kernelData,
 
   auto devKernel =  kernel->getDeviceKernel(*g_devices.at(deviceId)->devices()[0]);
 
+  hip_error = PlatformState::instance().uint8CreateVector(&(kernelData->binary), kernel_binary.size);
+
+  for (int i = 0; i < kernel_binary.size; i++) {
+    hip_error = PlatformState::instance().uint8VectorPushBack(&(kernelData->binary), kernel_binary.data[i]);
+  }
+
+  HIP_RETURN(hip_error);
+}
+
 hipError_t hipFreeKernelInfo(hipKernelInfo* kernelData) {
   HIP_INIT_API(hipFreeKernelInfo, kernelData);
 
