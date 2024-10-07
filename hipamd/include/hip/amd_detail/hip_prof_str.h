@@ -431,7 +431,9 @@ enum hip_api_id_t {
   HIP_API_ID_hipGraphBatchMemOpNodeSetParams = 411,
   HIP_API_ID_hipGraphExecBatchMemOpNodeSetParams = 412,
   HIP_API_ID_hipStreamBatchMemOp = 413,
-  HIP_API_ID_LAST = 413,
+  HIP_API_ID_hipFreeKernelInfo = 414,
+  HIP_API_ID_hipGetProcAddress = 415,
+  HIP_API_ID_LAST = 415,
 
   HIP_API_ID_hipChooseDevice = HIP_API_ID_CONCAT(HIP_API_ID_,hipChooseDevice),
   HIP_API_ID_hipGetDeviceProperties = HIP_API_ID_CONCAT(HIP_API_ID_,hipGetDeviceProperties),
@@ -444,7 +446,6 @@ enum hip_api_id_t {
   HIP_API_ID_hipDestroyTextureObject = HIP_API_ID_NONE,
   HIP_API_ID_hipDeviceGetCount = HIP_API_ID_NONE,
   HIP_API_ID_hipDeviceGetTexture1DLinearMaxWidth = HIP_API_ID_NONE,
-  HIP_API_ID_hipGetProcAddress = HIP_API_ID_NONE,
   HIP_API_ID_hipGetTextureAlignmentOffset = HIP_API_ID_NONE,
   HIP_API_ID_hipGetTextureObjectResourceDesc = HIP_API_ID_NONE,
   HIP_API_ID_hipGetTextureObjectResourceViewDesc = HIP_API_ID_NONE,
@@ -567,6 +568,7 @@ static inline const char* hip_api_name(const uint32_t id) {
     case HIP_API_ID_hipFreeArray: return "hipFreeArray";
     case HIP_API_ID_hipFreeAsync: return "hipFreeAsync";
     case HIP_API_ID_hipFreeHost: return "hipFreeHost";
+    case HIP_API_ID_hipFreeKernelInfo: return "hipFreeKernelInfo";
     case HIP_API_ID_hipFreeMipmappedArray: return "hipFreeMipmappedArray";
     case HIP_API_ID_hipFuncGetAttribute: return "hipFuncGetAttribute";
     case HIP_API_ID_hipFuncGetAttributes: return "hipFuncGetAttributes";
@@ -585,6 +587,7 @@ static inline const char* hip_api_name(const uint32_t id) {
     case HIP_API_ID_hipGetKernelInfo: return "hipGetKernelInfo";
     case HIP_API_ID_hipGetLastError: return "hipGetLastError";
     case HIP_API_ID_hipGetMipmappedArrayLevel: return "hipGetMipmappedArrayLevel";
+    case HIP_API_ID_hipGetProcAddress: return "hipGetProcAddress";
     case HIP_API_ID_hipGetSymbolAddress: return "hipGetSymbolAddress";
     case HIP_API_ID_hipGetSymbolSize: return "hipGetSymbolSize";
     case HIP_API_ID_hipGraphAddBatchMemOpNode: return "hipGraphAddBatchMemOpNode";
@@ -975,6 +978,7 @@ static inline uint32_t hipApiIdByName(const char* name) {
   if (strcmp("hipFreeArray", name) == 0) return HIP_API_ID_hipFreeArray;
   if (strcmp("hipFreeAsync", name) == 0) return HIP_API_ID_hipFreeAsync;
   if (strcmp("hipFreeHost", name) == 0) return HIP_API_ID_hipFreeHost;
+  if (strcmp("hipFreeKernelInfo", name) == 0) return HIP_API_ID_hipFreeKernelInfo;
   if (strcmp("hipFreeMipmappedArray", name) == 0) return HIP_API_ID_hipFreeMipmappedArray;
   if (strcmp("hipFuncGetAttribute", name) == 0) return HIP_API_ID_hipFuncGetAttribute;
   if (strcmp("hipFuncGetAttributes", name) == 0) return HIP_API_ID_hipFuncGetAttributes;
@@ -993,6 +997,7 @@ static inline uint32_t hipApiIdByName(const char* name) {
   if (strcmp("hipGetKernelInfo", name) == 0) return HIP_API_ID_hipGetKernelInfo;
   if (strcmp("hipGetLastError", name) == 0) return HIP_API_ID_hipGetLastError;
   if (strcmp("hipGetMipmappedArrayLevel", name) == 0) return HIP_API_ID_hipGetMipmappedArrayLevel;
+  if (strcmp("hipGetProcAddress", name) == 0) return HIP_API_ID_hipGetProcAddress;
   if (strcmp("hipGetSymbolAddress", name) == 0) return HIP_API_ID_hipGetSymbolAddress;
   if (strcmp("hipGetSymbolSize", name) == 0) return HIP_API_ID_hipGetSymbolSize;
   if (strcmp("hipGraphAddBatchMemOpNode", name) == 0) return HIP_API_ID_hipGraphAddBatchMemOpNode;
@@ -1776,6 +1781,10 @@ typedef struct hip_api_data_s {
       void* ptr;
     } hipFreeHost;
     struct {
+      hipKernelInfo* kernelData;
+      hipKernelInfo kernelData__val;
+    } hipFreeKernelInfo;
+    struct {
       hipMipmappedArray_t mipmappedArray;
     } hipFreeMipmappedArray;
     struct {
@@ -1855,6 +1864,16 @@ typedef struct hip_api_data_s {
       hipMipmappedArray_const_t mipmappedArray;
       unsigned int level;
     } hipGetMipmappedArrayLevel;
+    struct {
+      const char* symbol;
+      char symbol__val;
+      void** pfn;
+      void* pfn__val;
+      int hipVersion;
+      uint64_t flags;
+      hipDriverProcAddressQueryResult* symbolStatus;
+      hipDriverProcAddressQueryResult symbolStatus__val;
+    } hipGetProcAddress;
     struct {
       void** devPtr;
       void* devPtr__val;
@@ -4183,6 +4202,10 @@ typedef struct hip_api_data_s {
 #define INIT_hipFreeHost_CB_ARGS_DATA(cb_data) { \
   cb_data.args.hipFreeHost.ptr = (void*)ptr; \
 };
+// hipFreeKernelInfo[('hipKernelInfo*', 'kernelData')]
+#define INIT_hipFreeKernelInfo_CB_ARGS_DATA(cb_data) { \
+  cb_data.args.hipFreeKernelInfo.kernelData = (hipKernelInfo*)kernelData; \
+};
 // hipFreeMipmappedArray[('hipMipmappedArray_t', 'mipmappedArray')]
 #define INIT_hipFreeMipmappedArray_CB_ARGS_DATA(cb_data) { \
   cb_data.args.hipFreeMipmappedArray.mipmappedArray = (hipMipmappedArray_t)mipmappedArray; \
@@ -4270,6 +4293,14 @@ typedef struct hip_api_data_s {
   cb_data.args.hipGetMipmappedArrayLevel.levelArray = (hipArray_t*)levelArray; \
   cb_data.args.hipGetMipmappedArrayLevel.mipmappedArray = (hipMipmappedArray_const_t)mipmappedArray; \
   cb_data.args.hipGetMipmappedArrayLevel.level = (unsigned int)level; \
+};
+// hipGetProcAddress[('const char*', 'symbol'), ('void**', 'pfn'), ('int', 'hipVersion'), ('uint64_t', 'flags'), ('hipDriverProcAddressQueryResult*', 'symbolStatus')]
+#define INIT_hipGetProcAddress_CB_ARGS_DATA(cb_data) { \
+  cb_data.args.hipGetProcAddress.symbol = (symbol) ? strdup(symbol) : NULL; \
+  cb_data.args.hipGetProcAddress.pfn = (void**)pfn; \
+  cb_data.args.hipGetProcAddress.hipVersion = (int)hipVersion; \
+  cb_data.args.hipGetProcAddress.flags = (uint64_t)flags; \
+  cb_data.args.hipGetProcAddress.symbolStatus = (hipDriverProcAddressQueryResult*)symbolStatus; \
 };
 // hipGetSymbolAddress[('void**', 'devPtr'), ('const void*', 'symbol')]
 #define INIT_hipGetSymbolAddress_CB_ARGS_DATA(cb_data) { \
@@ -6105,8 +6136,6 @@ typedef struct hip_api_data_s {
 #define INIT_hipDeviceGetCount_CB_ARGS_DATA(cb_data) {};
 // hipDeviceGetTexture1DLinearMaxWidth()
 #define INIT_hipDeviceGetTexture1DLinearMaxWidth_CB_ARGS_DATA(cb_data) {};
-// hipGetProcAddress()
-#define INIT_hipGetProcAddress_CB_ARGS_DATA(cb_data) {};
 // hipGetTextureAlignmentOffset()
 #define INIT_hipGetTextureAlignmentOffset_CB_ARGS_DATA(cb_data) {};
 // hipGetTextureObjectResourceDesc()
@@ -6524,6 +6553,10 @@ static inline void hipApiArgsInit(hip_api_id_t id, hip_api_data_t* data) {
 // hipFreeHost[('void*', 'ptr')]
     case HIP_API_ID_hipFreeHost:
       break;
+// hipFreeKernelInfo[('hipKernelInfo*', 'kernelData')]
+    case HIP_API_ID_hipFreeKernelInfo:
+      if (data->args.hipFreeKernelInfo.kernelData) data->args.hipFreeKernelInfo.kernelData__val = *(data->args.hipFreeKernelInfo.kernelData);
+      break;
 // hipFreeMipmappedArray[('hipMipmappedArray_t', 'mipmappedArray')]
     case HIP_API_ID_hipFreeMipmappedArray:
       break;
@@ -6591,6 +6624,12 @@ static inline void hipApiArgsInit(hip_api_id_t id, hip_api_data_t* data) {
 // hipGetMipmappedArrayLevel[('hipArray_t*', 'levelArray'), ('hipMipmappedArray_const_t', 'mipmappedArray'), ('unsigned int', 'level')]
     case HIP_API_ID_hipGetMipmappedArrayLevel:
       if (data->args.hipGetMipmappedArrayLevel.levelArray) data->args.hipGetMipmappedArrayLevel.levelArray__val = *(data->args.hipGetMipmappedArrayLevel.levelArray);
+      break;
+// hipGetProcAddress[('const char*', 'symbol'), ('void**', 'pfn'), ('int', 'hipVersion'), ('uint64_t', 'flags'), ('hipDriverProcAddressQueryResult*', 'symbolStatus')]
+    case HIP_API_ID_hipGetProcAddress:
+      if (data->args.hipGetProcAddress.symbol) data->args.hipGetProcAddress.symbol__val = *(data->args.hipGetProcAddress.symbol);
+      if (data->args.hipGetProcAddress.pfn) data->args.hipGetProcAddress.pfn__val = *(data->args.hipGetProcAddress.pfn);
+      if (data->args.hipGetProcAddress.symbolStatus) data->args.hipGetProcAddress.symbolStatus__val = *(data->args.hipGetProcAddress.symbolStatus);
       break;
 // hipGetSymbolAddress[('void**', 'devPtr'), ('const void*', 'symbol')]
     case HIP_API_ID_hipGetSymbolAddress:
@@ -8420,6 +8459,12 @@ static inline const char* hipApiString(hip_api_id_t id, const hip_api_data_t* da
       oss << "ptr="; roctracer::hip_support::detail::operator<<(oss, data->args.hipFreeHost.ptr);
       oss << ")";
     break;
+    case HIP_API_ID_hipFreeKernelInfo:
+      oss << "hipFreeKernelInfo(";
+      if (data->args.hipFreeKernelInfo.kernelData == NULL) oss << "kernelData=NULL";
+      else { oss << "kernelData="; roctracer::hip_support::detail::operator<<(oss, data->args.hipFreeKernelInfo.kernelData__val); }
+      oss << ")";
+    break;
     case HIP_API_ID_hipFreeMipmappedArray:
       oss << "hipFreeMipmappedArray(";
       oss << "mipmappedArray="; roctracer::hip_support::detail::operator<<(oss, data->args.hipFreeMipmappedArray.mipmappedArray);
@@ -8538,6 +8583,18 @@ static inline const char* hipApiString(hip_api_id_t id, const hip_api_data_t* da
       else { oss << "levelArray="; roctracer::hip_support::detail::operator<<(oss, data->args.hipGetMipmappedArrayLevel.levelArray__val); }
       oss << ", mipmappedArray="; roctracer::hip_support::detail::operator<<(oss, data->args.hipGetMipmappedArrayLevel.mipmappedArray);
       oss << ", level="; roctracer::hip_support::detail::operator<<(oss, data->args.hipGetMipmappedArrayLevel.level);
+      oss << ")";
+    break;
+    case HIP_API_ID_hipGetProcAddress:
+      oss << "hipGetProcAddress(";
+      if (data->args.hipGetProcAddress.symbol == NULL) oss << "symbol=NULL";
+      else { oss << "symbol="; roctracer::hip_support::detail::operator<<(oss, data->args.hipGetProcAddress.symbol__val); }
+      if (data->args.hipGetProcAddress.pfn == NULL) oss << ", pfn=NULL";
+      else { oss << ", pfn="; roctracer::hip_support::detail::operator<<(oss, data->args.hipGetProcAddress.pfn__val); }
+      oss << ", hipVersion="; roctracer::hip_support::detail::operator<<(oss, data->args.hipGetProcAddress.hipVersion);
+      oss << ", flags="; roctracer::hip_support::detail::operator<<(oss, data->args.hipGetProcAddress.flags);
+      if (data->args.hipGetProcAddress.symbolStatus == NULL) oss << ", symbolStatus=NULL";
+      else { oss << ", symbolStatus="; roctracer::hip_support::detail::operator<<(oss, data->args.hipGetProcAddress.symbolStatus__val); }
       oss << ")";
     break;
     case HIP_API_ID_hipGetSymbolAddress:
