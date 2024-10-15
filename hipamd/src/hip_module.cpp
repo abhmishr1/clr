@@ -936,28 +936,26 @@ hipError_t hipGetKernelInfo(const void* hostFunction, hipKernelInfo* kernelData,
   hip::DeviceFunc* devFunc = hip::DeviceFunc::asFunction(func);
   amd::Kernel* kernel = devFunc->kernel();
 
+  // keeping device kernel if needed
   auto devKernel =  kernel->getDeviceKernel(*g_devices.at(deviceId)->devices()[0]);
   // std::cout << "dev kernel name: " << devKernel->name() << std::endl;
 
+  // keeping program and device program if needed
   amd::Program &program = kernel->program();
   auto devProgram =  program.getDeviceProgram(*g_devices.at(deviceId)->devices()[0]);
 
+  /*
+  // example of device program: demangled name
   std::string demangledName;
   devProgram->getDemangledName(devKernel->name(), demangledName);
   std::cout << "demangled name: " << demangledName << std::endl;
+  */
 
+  /*
+  // example of device kernel: metadata
   #if defined(USE_COMGR_LIBRARY)
-  // amd_comgr_metadata_node_t kernelMetaNode;
-  // devProgram->getKernelMetadata(devKernel->name(), &kernelMetaNode);
 
-  // amd::Kernel::KernelFieldMapV3Type kernel_field_map;
-
-  // amd_comgr_status_t status;
-  // std::string metaBuf;
-  // status = devKernel->getMetaBuf(kernelMetaNode, &metaBuf);
-  // std::cout << "meta buf: " << metaBuf << std::endl;
-
-  // std::cout << "kernel_code_handle: " << devKernel->KernelCodeHandle() << std::endl;
+  std::cout << "kernel_code_handle: " << devKernel->KernelCodeHandle() << std::endl;
   std::cout << ".name: " << devKernel->name() << std::endl;
   std::cout << ".group_segment_fixed_size: " << devKernel->WorkgroupGroupSegmentByteSize() << std::endl;
   std::cout << ".kernarg_segment_align: " << devKernel->KernargSegmentAlignment() << std::endl;
@@ -971,18 +969,25 @@ hipError_t hipGetKernelInfo(const void* hostFunction, hipKernelInfo* kernelData,
   std::cout << ".workgroup_processor_mode: " << devKernel->workGroupInfo()->isWGPMode_ << std::endl;
 
   #endif
+  */
 
   const amd::KernelSignature& signature = kernel->signature();
-  std::cout << ".args: " << signature.numParametersAll() << std::endl;
 
-  for (size_t i = 0; i < signature.numParametersAll(); ++i) {
+  // create vectors for kernel arguments sizes and offsets
+  hip_error = PlatformState::instance().uint8CreateVector(&(kernelData->kernargs_sizes), signature.numParametersAll());
+  hip_error = PlatformState::instance().uint8CreateVector(&(kernelData->kernargs_offsets), signature.numParametersAll());
+
+  // push values of kernel arguments sizes and offsets into the vectors
+  for (int i = 0; i < signature.numParametersAll(); i++) {
     const amd::KernelParameterDescriptor& desc = signature.at(i);
-    std::cout << " - .size: " << desc.size_<< std::endl;
-    std::cout << "   .offset: " << desc.offset_ << std::endl;
+    hip_error = PlatformState::instance().uint8VectorPushBack(&(kernelData->kernargs_sizes), desc.size_);
+    hip_error = PlatformState::instance().uint8VectorPushBack(&(kernelData->kernargs_offsets), desc.offset_);
   }
 
+  // create vector for kernel binary
   hip_error = PlatformState::instance().uint8CreateVector(&(kernelData->binary), kernel_binary.size);
 
+  // push kernel binary into the vector
   for (int i = 0; i < kernel_binary.size; i++) {
     hip_error = PlatformState::instance().uint8VectorPushBack(&(kernelData->binary), kernel_binary.data[i]);
   }
