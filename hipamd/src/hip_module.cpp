@@ -984,10 +984,8 @@ hipError_t hipGetKernelInfo(const void* hostFunction, hipKernelInfo* kernelData,
     hip_error = PlatformState::instance().uint8VectorPushBack(&(kernelData->kernargs_offsets), desc.offset_);
   }
 
-  // create vector for kernel binary
   hip_error = PlatformState::instance().uint8CreateVector(&(kernelData->binary), kernel_binary.size);
 
-  // push kernel binary into the vector
   for (int i = 0; i < kernel_binary.size; i++) {
     hip_error = PlatformState::instance().uint8VectorPushBack(&(kernelData->binary), kernel_binary.data[i]);
   }
@@ -1000,6 +998,8 @@ hipError_t hipFreeKernelInfo(hipKernelInfo* kernelData) {
 
   hipError_t hip_error;
   hip_error = PlatformState::instance().uint8FreeVector(&(kernelData->binary));
+  hip_error = PlatformState::instance().uint8FreeVector(&(kernelData->kernargs_sizes));
+  hip_error = PlatformState::instance().uint8FreeVector(&(kernelData->kernargs_offsets));
 
   HIP_RETURN(hip_error);
 }
