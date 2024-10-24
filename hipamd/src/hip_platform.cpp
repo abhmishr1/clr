@@ -754,7 +754,7 @@ hipError_t PlatformState::getKernelBinaryAndDeviceId(const void* hostFunction, s
   return hip_error;
 }
 
-hipError_t PlatformState::uint8CreateVector(vector_uint8 *vec, size_t limit) {
+hipError_t PlatformState::uint8CreateVector(hipVectorUint8 *vec, size_t limit) {
 
   vec->data = (uint8_t*) malloc(limit * sizeof(uint8_t));
   if (vec->data == NULL) {
@@ -768,7 +768,7 @@ hipError_t PlatformState::uint8CreateVector(vector_uint8 *vec, size_t limit) {
   return hipSuccess;
 }
 
-hipError_t PlatformState::uint8VectorPushBack(vector_uint8 *vec, const uint8_t value) {
+hipError_t PlatformState::uint8VectorPushBack(hipVectorUint8 *vec, const uint8_t value) {
 
   if (vec->size == vec->limit) {
     // resize the vector if it's full
@@ -785,7 +785,7 @@ hipError_t PlatformState::uint8VectorPushBack(vector_uint8 *vec, const uint8_t v
   return hipSuccess;
 }
 
-hipError_t PlatformState::uint8FreeVector(vector_uint8 *vec) {
+hipError_t PlatformState::uint8FreeVector(hipVectorUint8 *vec) {
   free(vec->data);
 
   return hipSuccess;

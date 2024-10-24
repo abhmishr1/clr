@@ -66,9 +66,9 @@ class PlatformState {
   void init();
 
   // uint8 vector functions
-  hipError_t uint8CreateVector(vector_uint8 *vec, size_t limit);
-  hipError_t uint8VectorPushBack(vector_uint8 *vec, const uint8_t value);
-  hipError_t uint8FreeVector(vector_uint8 *vec);
+  hipError_t uint8CreateVector(hipVectorUint8 *vec, size_t limit);
+  hipError_t uint8VectorPushBack(hipVectorUint8 *vec, const uint8_t value);
+  hipError_t uint8FreeVector(hipVectorUint8 *vec);
 
   // Dynamic Code Objects functions
   hipError_t loadModule(hipModule_t* module, const char* fname, const void* image = nullptr);
