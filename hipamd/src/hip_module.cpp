@@ -974,14 +974,14 @@ hipError_t hipGetKernelInfo(const void* hostFunction, hipKernelInfo* kernelData,
   const amd::KernelSignature& signature = kernel->signature();
 
   // create vectors for kernel arguments sizes and offsets
-  hip_error = PlatformState::instance().uint8CreateVector(&(kernelData->kernargs_sizes), signature.numParametersAll());
-  hip_error = PlatformState::instance().uint8CreateVector(&(kernelData->kernargs_offsets), signature.numParametersAll());
+  hip_error = PlatformState::instance().uint8CreateVector(&(kernelData->kernArgsSizes), signature.numParametersAll());
+  hip_error = PlatformState::instance().uint8CreateVector(&(kernelData->kernArgsOffsets), signature.numParametersAll());
 
   // push values of kernel arguments sizes and offsets into the vectors
   for (int i = 0; i < signature.numParametersAll(); i++) {
     const amd::KernelParameterDescriptor& desc = signature.at(i);
-    hip_error = PlatformState::instance().uint8VectorPushBack(&(kernelData->kernargs_sizes), desc.size_);
-    hip_error = PlatformState::instance().uint8VectorPushBack(&(kernelData->kernargs_offsets), desc.offset_);
+    hip_error = PlatformState::instance().uint8VectorPushBack(&(kernelData->kernArgsSizes), desc.size_);
+    hip_error = PlatformState::instance().uint8VectorPushBack(&(kernelData->kernArgsOffsets), desc.offset_);
   }
 
   // create vector for kernel binary
@@ -1000,8 +1000,8 @@ hipError_t hipFreeKernelInfo(hipKernelInfo* kernelData) {
 
   hipError_t hip_error;
   hip_error = PlatformState::instance().uint8FreeVector(&(kernelData->binary));
-  hip_error = PlatformState::instance().uint8FreeVector(&(kernelData->kernargs_sizes));
-  hip_error = PlatformState::instance().uint8FreeVector(&(kernelData->kernargs_offsets));
+  hip_error = PlatformState::instance().uint8FreeVector(&(kernelData->kernArgsSizes));
+  hip_error = PlatformState::instance().uint8FreeVector(&(kernelData->kernArgsOffsets));
 
   HIP_RETURN(hip_error);
 }
