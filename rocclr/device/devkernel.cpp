@@ -406,6 +406,9 @@ static amd_comgr_status_t populateArgsV3(const amd_comgr_metadata_node_t key,
           if (buf.compare("dynamic_shared_pointer") == 0) {
             lcArg->info_.shared_ = true;
           }
+          else if (buf.compare("global_buffer") == 0) {
+              lcArg->info_.globalBuffer_ = true;
+          }
         } else if ((lcArg->info_.oclObject_ >= amd::KernelParameterDescriptor::HiddenNone) &&
                    (lcArg->info_.oclObject_ < amd::KernelParameterDescriptor::HiddenLast)) {
           lcArg->info_.hidden_ = true;
@@ -443,6 +446,7 @@ static amd_comgr_status_t populateArgsV3(const amd_comgr_metadata_node_t key,
         if (itAccQual == static_cast<cl_int>(0)) {
             return AMD_COMGR_STATUS_ERROR;
         }
+        lcArg->actualAccQualifier_ = itAccQual;
         lcArg->info_.isReadOnlyByCompiler = true;
         lcArg->info_.readOnly_ =
           (itAccQual == CL_KERNEL_ARG_ACCESS_READ_ONLY) ? true : false;

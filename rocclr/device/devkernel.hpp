@@ -79,6 +79,7 @@ struct KernelParameterDescriptor {
       uint32_t defined_ : 1;      //!< The argument was defined by the app
       uint32_t hidden_ : 1;       //!< It's a hidden argument
       uint32_t shared_ : 1;       //!< Dynamic shared memory
+      uint32_t globalBuffer_ : 1; //!< Global buffer
       uint32_t isReadOnlyByCompiler : 1; //!< Compiler determine it is read only
       uint32_t arrayIndex_ : 20;  //!< Index in the objects array or LDS alignment
     };
@@ -90,6 +91,8 @@ struct KernelParameterDescriptor {
       CL_KERNEL_ARG_ADDRESS_PRIVATE;                  //!< Argument's address qualifier
   cl_kernel_arg_access_qualifier accessQualifier_ =
       CL_KERNEL_ARG_ACCESS_NONE;                      //!< Argument's access qualifier
+  cl_kernel_arg_access_qualifier actualAccQualifier_ =
+      CL_KERNEL_ARG_ACCESS_NONE;                      //!< Argument's actual access qualifier
   cl_kernel_arg_type_qualifier typeQualifier_;        //!< Argument's type qualifier
 
   std::string name_;      //!< The parameter's name in the source
