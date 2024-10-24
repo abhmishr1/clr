@@ -977,11 +977,28 @@ hipError_t hipGetKernelInfo(const void* hostFunction, hipKernelInfo* kernelData,
   hip_error = PlatformState::instance().uint8CreateVector(&(kernelData->kernArgsSizes), signature.numParametersAll());
   hip_error = PlatformState::instance().uint8CreateVector(&(kernelData->kernArgsOffsets), signature.numParametersAll());
 
+  // create vector for kernel arguments access qualifiers
+  hip_error = PlatformState::instance().uint8CreateVector(&(kernelData->kernArgsAccQualifiers), signature.numParameters());
+
   // push values of kernel arguments sizes and offsets into the vectors
   for (int i = 0; i < signature.numParametersAll(); i++) {
     const amd::KernelParameterDescriptor& desc = signature.at(i);
     hip_error = PlatformState::instance().uint8VectorPushBack(&(kernelData->kernArgsSizes), desc.size_);
     hip_error = PlatformState::instance().uint8VectorPushBack(&(kernelData->kernArgsOffsets), desc.offset_);
+    if (desc.info_.globalBuffer_) {
+      switch (desc.actualAccQualifier_)
+      {
+      case CL_KERNEL_ARG_ACCESS_READ_ONLY:
+        hip_error = PlatformState::instance().uint8VectorPushBack(&(kernelData->kernArgsAccQualifiers), hipArgReadOnly);
+        break;
+      case CL_KERNEL_ARG_ACCESS_WRITE_ONLY:
+        hip_error = PlatformState::instance().uint8VectorPushBack(&(kernelData->kernArgsAccQualifiers), hipArgWriteOnly);
+        break;
+      default:
+        hip_error = PlatformState::instance().uint8VectorPushBack(&(kernelData->kernArgsAccQualifiers), hipArgReadWrite);
+        break;
+      }
+    }
   }
 
   // create vector for kernel binary
@@ -1002,6 +1019,7 @@ hipError_t hipFreeKernelInfo(hipKernelInfo* kernelData) {
   hip_error = PlatformState::instance().uint8FreeVector(&(kernelData->binary));
   hip_error = PlatformState::instance().uint8FreeVector(&(kernelData->kernArgsSizes));
   hip_error = PlatformState::instance().uint8FreeVector(&(kernelData->kernArgsOffsets));
+  hip_error = PlatformState::instance().uint8FreeVector(&(kernelData->kernArgsAccQualifiers));
 
   HIP_RETURN(hip_error);
 }
