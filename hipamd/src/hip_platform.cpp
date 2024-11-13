@@ -799,6 +799,23 @@ hipError_t PlatformState::populateKernelInfoStruct(amd::Kernel* kernel, kernelBi
   return hip_error;
 }
 
+hipError_t PlatformState::populateKArgsMallocsStruct(std::string kArgsStr, std::vector<void*> devMallocs, hipKArgsMallocsList* mallocsList) {
+
+  hipError_t hip_error;
+
+  hip_error = PlatformState::instance().template createVector<hipVectorVoid>(&(mallocsList->mallocs), devMallocs.size());
+
+  for (auto &mem_addr : devMallocs) {
+    char *maddr_bytes = (char *) &mem_addr;
+    auto bytesStr = std::string(maddr_bytes, sizeof(mem_addr));
+    size_t pos = kArgsStr.find(bytesStr);
+    if (pos < kArgsStr.size()) {
+      hip_error = PlatformState::instance().template vectorPushBack<hipVectorVoid, void*>(&(mallocsList->mallocs), mem_addr);
+    }
+  }
+  return hip_error;
+}
+
 hipError_t PlatformState::freeKernelInfoStruct(hipKernelInfo* kernelData) {
 
   hipError_t hip_error;
@@ -810,10 +827,29 @@ hipError_t PlatformState::freeKernelInfoStruct(hipKernelInfo* kernelData) {
   return hip_error;
 }
 
+hipError_t PlatformState::freeKArgsMallocsStruct(hipKArgsMallocsList* mallocsList) {
+
+  hipError_t hip_error;
+
+  hip_error = PlatformState::instance().template freeVector<hipVectorVoid>(&(mallocsList->mallocs));
+
+  return hip_error;
+}
+
 template <typename T>
 hipError_t PlatformState::createVector(T* vec, size_t limit) {
 
-  vec->data = (uint8_t*) malloc(limit * sizeof(uint8_t));
+  if constexpr (std::is_same_v<T, hipVectorUint8>) {
+    vec->data = (uint8_t*) malloc(limit * sizeof(uint8_t));
+  }
+  else if constexpr (std::is_same_v<T, hipVectorVoid>) {
+    vec->data = (void**) malloc(limit * sizeof(void*));
+  }
+  else {
+    std::cerr << "Invalid type. Accepted types: hipVectorUint8, hipVectorVoid" <<std::endl;
+    return hipErrorInvalidValue;
+  }
+
   if (vec->data == NULL) {
       fprintf(stderr, "uint8 vector memory allocation failed\n");
       exit(1);
@@ -831,7 +867,7 @@ hipError_t PlatformState::vectorPushBack(vecType* vec, valType value) {
   if (vec->size == vec->limit) {
     // resize the vector if it's full
     vec->limit *= 2;
-    vec->data = (uint8_t *)realloc(vec->data, sizeof(uint8_t) * vec->limit);
+    vec->data = (valType*)realloc(vec->data, sizeof(valType) * vec->limit);
     if (vec->data == NULL) {
         fprintf(stderr, "uint8 vector memory reallocation failed\n");
         exit(1);

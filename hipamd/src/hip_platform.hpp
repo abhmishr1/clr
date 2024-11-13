@@ -127,7 +127,9 @@ class PlatformState {
 
   hipError_t getKernelBinaryAndDeviceId(const void* hostFunction, std::string archName, int& deviceId, kernelBin* kernel_binary);
   hipError_t populateKernelInfoStruct(amd::Kernel* kernel, kernelBin kernel_binary, hipKernelInfo* kernelData);
+  hipError_t populateKArgsMallocsStruct(std::string kArgsStr, std::vector<void*> devMallocs, hipKArgsMallocsList* mallocsList);
   hipError_t freeKernelInfoStruct(hipKernelInfo* kernelData);
+  hipError_t freeKArgsMallocsStruct(hipKArgsMallocsList* mallocsList);
 
   size_t UfdMapSize() const { return ufd_map_.size(); }
 
