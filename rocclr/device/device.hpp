@@ -1374,6 +1374,7 @@ class MemObjMap : public AllStatic {
   static void RemoveVirtualMemObj(const void* k);  //!< Same as RemoveMemObj but for virtual addressing
   static amd::Memory* FindVirtualMemObj(
       const void* k);  //!< Same as FindMemObj but for virtual addressing
+  static std::vector<void*> getDeviceMallocs(size_t devId);
  private:
   static std::map<uintptr_t, amd::Memory*>
       MemObjMap_;                      //!< the mem object<->hostptr information container

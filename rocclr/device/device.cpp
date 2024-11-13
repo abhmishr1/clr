@@ -384,6 +384,17 @@ amd::Memory* MemObjMap::FindVirtualMemObj(const void* k) {
   }
 }
 
+std::vector<void*> MemObjMap::getDeviceMallocs(size_t devId) {
+  std::vector<void*> result;
+
+  for (const auto& pair : MemObjMap_) {
+    if (pair.second->getUserData().deviceId == devId) {
+      result.push_back(reinterpret_cast<void*>(pair.first));
+    }
+  }
+  return result;
+}
+
 //==================================================================================================
 bool Device::ValidateVirtualAddressRange(amd::Memory* vaddr_base_obj, amd::Memory* vaddr_sub_obj) {
 
