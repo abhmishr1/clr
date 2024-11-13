@@ -190,7 +190,7 @@ hipError_t hipImportExternalSemaphore(hipExternalSemaphore_t* extSem_out,
   }
   if (device->importExtSemaphore(extSem_out, semHandleDesc->handle.win32.handle,
                                  static_cast <amd::ExternalSemaphoreHandleType>
-                                 (semHandleDesc->type))) {
+                                 (semHandleDesc->type)))
 #else
   if (semHandleDesc->handle.fd == 0) {
     HIP_RETURN(hipErrorInvalidValue);
@@ -710,6 +710,31 @@ hipError_t hipExtMallocWithFlags(void** ptr, size_t sizeBytes, unsigned int flag
     svmMem->getUserData().flags = flags;
   }
   HIP_RETURN(status, (ptr != nullptr)? *ptr : nullptr);
+}
+
+hipError_t hipGetKArgsMallocs(void** kArgsAddr, size_t kArgsSize, size_t devId, hipKArgsMallocsList* mallocsList) {
+  HIP_INIT_API(hipGetKArgsMallocs, kArgsAddr, kArgsSize, devId, mallocsList);
+
+  hipError_t hip_error;
+
+  char *kArgsBytes = (char *) &kArgsAddr[0];
+  auto kArgsStr = std::string(kArgsBytes, kArgsSize);
+
+  std::vector<void*> devMallocs;
+  devMallocs = amd::MemObjMap::getDeviceMallocs(devId);
+
+  hip_error = PlatformState::instance().populateKArgsMallocsStruct(kArgsStr, devMallocs, mallocsList);
+
+  HIP_RETURN(hip_error);
+}
+
+hipError_t hipFreeKArgsMallocs(hipKArgsMallocsList* mallocsList) {
+  HIP_INIT_API(hipFreeKArgsMallocs, mallocsList);
+
+  hipError_t hip_error;
+  hip_error = PlatformState::instance().freeKArgsMallocsStruct(mallocsList);
+
+  HIP_RETURN(hip_error);
 }
 
 hipError_t hipMalloc(void** ptr, size_t sizeBytes) {
