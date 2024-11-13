@@ -754,7 +754,64 @@ hipError_t PlatformState::getKernelBinaryAndDeviceId(const void* hostFunction, s
   return hip_error;
 }
 
-hipError_t PlatformState::uint8CreateVector(hipVectorUint8 *vec, size_t limit) {
+hipError_t PlatformState::populateKernelInfoStruct(amd::Kernel* kernel, kernelBin kernel_binary, hipKernelInfo* kernelData) {
+
+  hipError_t hip_error;
+
+  // create vector for kernel binary
+  hip_error = PlatformState::instance().template createVector<hipVectorUint8>(&(kernelData->binary), kernel_binary.size);
+
+  // push kernel binary into the vector
+  for (int i = 0; i < kernel_binary.size; i++) {
+    hip_error = PlatformState::instance().template vectorPushBack<hipVectorUint8, uint8_t>(&(kernelData->binary), kernel_binary.data[i]);
+  }
+
+  const amd::KernelSignature& signature = kernel->signature();
+
+  // create vectors for kernel arguments sizes and offsets
+  hip_error = PlatformState::instance().template createVector<hipVectorUint8>(&(kernelData->kernArgsSizes), signature.numParametersAll());
+  hip_error = PlatformState::instance().template createVector<hipVectorUint8>(&(kernelData->kernArgsOffsets), signature.numParametersAll());
+
+  // create vector for kernel arguments access qualifiers
+  hip_error = PlatformState::instance().template createVector<hipVectorUint8>(&(kernelData->kernArgsAccQualifiers), signature.numParameters());
+
+  // push values of kernel arguments sizes and offsets into the vectors
+  for (int i = 0; i < signature.numParametersAll(); i++) {
+    const amd::KernelParameterDescriptor& desc = signature.at(i);
+    hip_error = PlatformState::instance().template vectorPushBack<hipVectorUint8, uint8_t>(&(kernelData->kernArgsSizes), desc.size_);
+    hip_error = PlatformState::instance().template vectorPushBack<hipVectorUint8, uint8_t>(&(kernelData->kernArgsOffsets), desc.offset_);
+    if (desc.info_.globalBuffer_) {
+      switch (desc.actualAccQualifier_)
+      {
+      case CL_KERNEL_ARG_ACCESS_READ_ONLY:
+        hip_error = PlatformState::instance().template vectorPushBack<hipVectorUint8, uint8_t>(&(kernelData->kernArgsAccQualifiers), hipArgReadOnly);
+        break;
+      case CL_KERNEL_ARG_ACCESS_WRITE_ONLY:
+        hip_error = PlatformState::instance().template vectorPushBack<hipVectorUint8, uint8_t>(&(kernelData->kernArgsAccQualifiers), hipArgWriteOnly);
+        break;
+      default:
+        hip_error = PlatformState::instance().template vectorPushBack<hipVectorUint8, uint8_t>(&(kernelData->kernArgsAccQualifiers), hipArgReadWrite);
+        break;
+      }
+    }
+  }
+
+  return hip_error;
+}
+
+hipError_t PlatformState::freeKernelInfoStruct(hipKernelInfo* kernelData) {
+
+  hipError_t hip_error;
+  hip_error = PlatformState::instance().template freeVector<hipVectorUint8>(&(kernelData->binary));
+  hip_error = PlatformState::instance().template freeVector<hipVectorUint8>(&(kernelData->kernArgsSizes));
+  hip_error = PlatformState::instance().template freeVector<hipVectorUint8>(&(kernelData->kernArgsOffsets));
+  hip_error = PlatformState::instance().template freeVector<hipVectorUint8>(&(kernelData->kernArgsAccQualifiers));
+
+  return hip_error;
+}
+
+template <typename T>
+hipError_t PlatformState::createVector(T* vec, size_t limit) {
 
   vec->data = (uint8_t*) malloc(limit * sizeof(uint8_t));
   if (vec->data == NULL) {
@@ -768,7 +825,8 @@ hipError_t PlatformState::uint8CreateVector(hipVectorUint8 *vec, size_t limit) {
   return hipSuccess;
 }
 
-hipError_t PlatformState::uint8VectorPushBack(hipVectorUint8 *vec, const uint8_t value) {
+template <typename vecType, typename valType>
+hipError_t PlatformState::vectorPushBack(vecType* vec, valType value) {
 
   if (vec->size == vec->limit) {
     // resize the vector if it's full
@@ -785,7 +843,8 @@ hipError_t PlatformState::uint8VectorPushBack(hipVectorUint8 *vec, const uint8_t
   return hipSuccess;
 }
 
-hipError_t PlatformState::uint8FreeVector(hipVectorUint8 *vec) {
+template <typename T>
+hipError_t PlatformState::freeVector(T* vec) {
   free(vec->data);
 
   return hipSuccess;

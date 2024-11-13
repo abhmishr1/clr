@@ -65,10 +65,13 @@ class PlatformState {
  public:
   void init();
 
-  // uint8 vector functions
-  hipError_t uint8CreateVector(hipVectorUint8 *vec, size_t limit);
-  hipError_t uint8VectorPushBack(hipVectorUint8 *vec, const uint8_t value);
-  hipError_t uint8FreeVector(hipVectorUint8 *vec);
+  // vector functions
+  template <typename T>
+  hipError_t createVector(T* vec, size_t limit);
+  template <typename vecType, typename valType>
+  hipError_t vectorPushBack(vecType* vec, valType value);
+  template <typename T>
+  hipError_t freeVector(T* vec);
 
   // Dynamic Code Objects functions
   hipError_t loadModule(hipModule_t* module, const char* fname, const void* image = nullptr);
@@ -123,6 +126,8 @@ class PlatformState {
   bool CloseUniqueFileHandle(const std::shared_ptr<UniqueFD>& ufd);
 
   hipError_t getKernelBinaryAndDeviceId(const void* hostFunction, std::string archName, int& deviceId, kernelBin* kernel_binary);
+  hipError_t populateKernelInfoStruct(amd::Kernel* kernel, kernelBin kernel_binary, hipKernelInfo* kernelData);
+  hipError_t freeKernelInfoStruct(hipKernelInfo* kernelData);
 
   size_t UfdMapSize() const { return ufd_map_.size(); }
 

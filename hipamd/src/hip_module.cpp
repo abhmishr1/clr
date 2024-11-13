@@ -944,43 +944,7 @@ hipError_t hipGetKernelInfo(const void* hostFunction, hipKernelInfo* kernelData,
   amd::Program &program = kernel->program();
   auto devProgram =  program.getDeviceProgram(*g_devices.at(deviceId)->devices()[0]);
 
-  const amd::KernelSignature& signature = kernel->signature();
-
-  // create vectors for kernel arguments sizes and offsets
-  hip_error = PlatformState::instance().uint8CreateVector(&(kernelData->kernArgsSizes), signature.numParametersAll());
-  hip_error = PlatformState::instance().uint8CreateVector(&(kernelData->kernArgsOffsets), signature.numParametersAll());
-
-  // create vector for kernel arguments access qualifiers
-  hip_error = PlatformState::instance().uint8CreateVector(&(kernelData->kernArgsAccQualifiers), signature.numParameters());
-
-  // push values of kernel arguments sizes and offsets into the vectors
-  for (int i = 0; i < signature.numParametersAll(); i++) {
-    const amd::KernelParameterDescriptor& desc = signature.at(i);
-    hip_error = PlatformState::instance().uint8VectorPushBack(&(kernelData->kernArgsSizes), desc.size_);
-    hip_error = PlatformState::instance().uint8VectorPushBack(&(kernelData->kernArgsOffsets), desc.offset_);
-    if (desc.info_.globalBuffer_) {
-      switch (desc.actualAccQualifier_)
-      {
-      case CL_KERNEL_ARG_ACCESS_READ_ONLY:
-        hip_error = PlatformState::instance().uint8VectorPushBack(&(kernelData->kernArgsAccQualifiers), hipArgReadOnly);
-        break;
-      case CL_KERNEL_ARG_ACCESS_WRITE_ONLY:
-        hip_error = PlatformState::instance().uint8VectorPushBack(&(kernelData->kernArgsAccQualifiers), hipArgWriteOnly);
-        break;
-      default:
-        hip_error = PlatformState::instance().uint8VectorPushBack(&(kernelData->kernArgsAccQualifiers), hipArgReadWrite);
-        break;
-      }
-    }
-  }
-
-  // create vector for kernel binary
-  hip_error = PlatformState::instance().uint8CreateVector(&(kernelData->binary), kernel_binary.size);
-
-  // push kernel binary into the vector
-  for (int i = 0; i < kernel_binary.size; i++) {
-    hip_error = PlatformState::instance().uint8VectorPushBack(&(kernelData->binary), kernel_binary.data[i]);
-  }
+  hip_error = PlatformState::instance().populateKernelInfoStruct(kernel, kernel_binary, kernelData);
 
   HIP_RETURN(hip_error);
 }
@@ -989,10 +953,7 @@ hipError_t hipFreeKernelInfo(hipKernelInfo* kernelData) {
   HIP_INIT_API(hipFreeKernelInfo, kernelData);
 
   hipError_t hip_error;
-  hip_error = PlatformState::instance().uint8FreeVector(&(kernelData->binary));
-  hip_error = PlatformState::instance().uint8FreeVector(&(kernelData->kernArgsSizes));
-  hip_error = PlatformState::instance().uint8FreeVector(&(kernelData->kernArgsOffsets));
-  hip_error = PlatformState::instance().uint8FreeVector(&(kernelData->kernArgsAccQualifiers));
+  hip_error = PlatformState::instance().freeKernelInfoStruct(kernelData);
 
   HIP_RETURN(hip_error);
 }
