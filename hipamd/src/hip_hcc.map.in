@@ -277,6 +277,8 @@ global:
     hipExtStreamGetCUMask;
     hipGetKernelInfo;
     hipFreeKernelInfo;
+    hipGetKArgsMallocs;
+    hipFreeKArgsMallocs;
     extern "C++" {
     hipCreateSurfaceObject*;
     hipDestroySurfaceObject*;

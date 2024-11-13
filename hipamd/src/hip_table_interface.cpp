@@ -1231,6 +1231,12 @@ hipError_t hipGetKernelInfo(const void* hostFunction, hipKernelInfo* kernelData,
 hipError_t hipFreeKernelInfo(hipKernelInfo* kernelData) {
   return hip::GetHipDispatchTable()->hipFreeKernelInfo_fn(kernelData);
 }
+hipError_t hipGetKArgsMallocs(void** kArgs_addr, size_t kArgs_sz, size_t devId, hipKArgsMallocsList* mallocsList) {
+  return hip::GetHipDispatchTable()->hipGetKArgsMallocs_fn(kArgs_addr, kArgs_sz, devId, mallocsList);
+}
+hipError_t hipFreeKArgsMallocs(hipKArgsMallocsList* mallocsList) {
+  return hip::GetHipDispatchTable()->hipFreeKArgsMallocs_fn(mallocsList);
+}
 hipError_t hipModuleLaunchCooperativeKernel(hipFunction_t f, unsigned int gridDimX,
                                             unsigned int gridDimY, unsigned int gridDimZ,
                                             unsigned int blockDimX, unsigned int blockDimY,
