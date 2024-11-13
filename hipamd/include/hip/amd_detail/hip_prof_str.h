@@ -433,7 +433,9 @@ enum hip_api_id_t {
   HIP_API_ID_hipStreamBatchMemOp = 413,
   HIP_API_ID_hipFreeKernelInfo = 414,
   HIP_API_ID_hipGetProcAddress = 415,
-  HIP_API_ID_LAST = 415,
+  HIP_API_ID_hipGetKArgsMallocs = 416,
+  HIP_API_ID_hipFreeKArgsMallocs = 417,
+  HIP_API_ID_LAST = 417,
 
   HIP_API_ID_hipChooseDevice = HIP_API_ID_CONCAT(HIP_API_ID_,hipChooseDevice),
   HIP_API_ID_hipGetDeviceProperties = HIP_API_ID_CONCAT(HIP_API_ID_,hipGetDeviceProperties),
@@ -568,6 +570,7 @@ static inline const char* hip_api_name(const uint32_t id) {
     case HIP_API_ID_hipFreeArray: return "hipFreeArray";
     case HIP_API_ID_hipFreeAsync: return "hipFreeAsync";
     case HIP_API_ID_hipFreeHost: return "hipFreeHost";
+    case HIP_API_ID_hipFreeKArgsMallocs: return "hipFreeKArgsMallocs";
     case HIP_API_ID_hipFreeKernelInfo: return "hipFreeKernelInfo";
     case HIP_API_ID_hipFreeMipmappedArray: return "hipFreeMipmappedArray";
     case HIP_API_ID_hipFuncGetAttribute: return "hipFuncGetAttribute";
@@ -584,6 +587,7 @@ static inline const char* hip_api_name(const uint32_t id) {
     case HIP_API_ID_hipGetDevicePropertiesR0600: return "hipGetDevicePropertiesR0600";
     case HIP_API_ID_hipGetErrorString: return "hipGetErrorString";
     case HIP_API_ID_hipGetFuncBySymbol: return "hipGetFuncBySymbol";
+    case HIP_API_ID_hipGetKArgsMallocs: return "hipGetKArgsMallocs";
     case HIP_API_ID_hipGetKernelInfo: return "hipGetKernelInfo";
     case HIP_API_ID_hipGetLastError: return "hipGetLastError";
     case HIP_API_ID_hipGetMipmappedArrayLevel: return "hipGetMipmappedArrayLevel";
@@ -978,6 +982,7 @@ static inline uint32_t hipApiIdByName(const char* name) {
   if (strcmp("hipFreeArray", name) == 0) return HIP_API_ID_hipFreeArray;
   if (strcmp("hipFreeAsync", name) == 0) return HIP_API_ID_hipFreeAsync;
   if (strcmp("hipFreeHost", name) == 0) return HIP_API_ID_hipFreeHost;
+  if (strcmp("hipFreeKArgsMallocs", name) == 0) return HIP_API_ID_hipFreeKArgsMallocs;
   if (strcmp("hipFreeKernelInfo", name) == 0) return HIP_API_ID_hipFreeKernelInfo;
   if (strcmp("hipFreeMipmappedArray", name) == 0) return HIP_API_ID_hipFreeMipmappedArray;
   if (strcmp("hipFuncGetAttribute", name) == 0) return HIP_API_ID_hipFuncGetAttribute;
@@ -994,6 +999,7 @@ static inline uint32_t hipApiIdByName(const char* name) {
   if (strcmp("hipGetDevicePropertiesR0600", name) == 0) return HIP_API_ID_hipGetDevicePropertiesR0600;
   if (strcmp("hipGetErrorString", name) == 0) return HIP_API_ID_hipGetErrorString;
   if (strcmp("hipGetFuncBySymbol", name) == 0) return HIP_API_ID_hipGetFuncBySymbol;
+  if (strcmp("hipGetKArgsMallocs", name) == 0) return HIP_API_ID_hipGetKArgsMallocs;
   if (strcmp("hipGetKernelInfo", name) == 0) return HIP_API_ID_hipGetKernelInfo;
   if (strcmp("hipGetLastError", name) == 0) return HIP_API_ID_hipGetLastError;
   if (strcmp("hipGetMipmappedArrayLevel", name) == 0) return HIP_API_ID_hipGetMipmappedArrayLevel;
@@ -1781,6 +1787,10 @@ typedef struct hip_api_data_s {
       void* ptr;
     } hipFreeHost;
     struct {
+      hipKArgsMallocsList* mallocsList;
+      hipKArgsMallocsList mallocsList__val;
+    } hipFreeKArgsMallocs;
+    struct {
       hipKernelInfo* kernelData;
       hipKernelInfo kernelData__val;
     } hipFreeKernelInfo;
@@ -1851,6 +1861,14 @@ typedef struct hip_api_data_s {
       hipFunction_t functionPtr__val;
       const void* symbolPtr;
     } hipGetFuncBySymbol;
+    struct {
+      void** kArgsAddr;
+      void* kArgsAddr__val;
+      size_t kArgsSize;
+      size_t devId;
+      hipKArgsMallocsList* mallocsList;
+      hipKArgsMallocsList mallocsList__val;
+    } hipGetKArgsMallocs;
     struct {
       const void* hostFunction;
       hipKernelInfo* kernelData;
@@ -4202,6 +4220,10 @@ typedef struct hip_api_data_s {
 #define INIT_hipFreeHost_CB_ARGS_DATA(cb_data) { \
   cb_data.args.hipFreeHost.ptr = (void*)ptr; \
 };
+// hipFreeKArgsMallocs[('hipKArgsMallocsList*', 'mallocsList')]
+#define INIT_hipFreeKArgsMallocs_CB_ARGS_DATA(cb_data) { \
+  cb_data.args.hipFreeKArgsMallocs.mallocsList = (hipKArgsMallocsList*)mallocsList; \
+};
 // hipFreeKernelInfo[('hipKernelInfo*', 'kernelData')]
 #define INIT_hipFreeKernelInfo_CB_ARGS_DATA(cb_data) { \
   cb_data.args.hipFreeKernelInfo.kernelData = (hipKernelInfo*)kernelData; \
@@ -4278,6 +4300,13 @@ typedef struct hip_api_data_s {
 #define INIT_hipGetFuncBySymbol_CB_ARGS_DATA(cb_data) { \
   cb_data.args.hipGetFuncBySymbol.functionPtr = (hipFunction_t*)functionPtr; \
   cb_data.args.hipGetFuncBySymbol.symbolPtr = (const void*)symbolPtr; \
+};
+// hipGetKArgsMallocs[('void**', 'kArgsAddr'), ('size_t', 'kArgsSize'), ('size_t', 'devId'), ('hipKArgsMallocsList*', 'mallocsList')]
+#define INIT_hipGetKArgsMallocs_CB_ARGS_DATA(cb_data) { \
+  cb_data.args.hipGetKArgsMallocs.kArgsAddr = (void**)kArgsAddr; \
+  cb_data.args.hipGetKArgsMallocs.kArgsSize = (size_t)kArgsSize; \
+  cb_data.args.hipGetKArgsMallocs.devId = (size_t)devId; \
+  cb_data.args.hipGetKArgsMallocs.mallocsList = (hipKArgsMallocsList*)mallocsList; \
 };
 // hipGetKernelInfo[('const void*', 'hostFunction'), ('hipKernelInfo*', 'kernelData'), ('const char*', 'archName')]
 #define INIT_hipGetKernelInfo_CB_ARGS_DATA(cb_data) { \
@@ -6553,6 +6582,10 @@ static inline void hipApiArgsInit(hip_api_id_t id, hip_api_data_t* data) {
 // hipFreeHost[('void*', 'ptr')]
     case HIP_API_ID_hipFreeHost:
       break;
+// hipFreeKArgsMallocs[('hipKArgsMallocsList*', 'mallocsList')]
+    case HIP_API_ID_hipFreeKArgsMallocs:
+      if (data->args.hipFreeKArgsMallocs.mallocsList) data->args.hipFreeKArgsMallocs.mallocsList__val = *(data->args.hipFreeKArgsMallocs.mallocsList);
+      break;
 // hipFreeKernelInfo[('hipKernelInfo*', 'kernelData')]
     case HIP_API_ID_hipFreeKernelInfo:
       if (data->args.hipFreeKernelInfo.kernelData) data->args.hipFreeKernelInfo.kernelData__val = *(data->args.hipFreeKernelInfo.kernelData);
@@ -6612,6 +6645,11 @@ static inline void hipApiArgsInit(hip_api_id_t id, hip_api_data_t* data) {
 // hipGetFuncBySymbol[('hipFunction_t*', 'functionPtr'), ('const void*', 'symbolPtr')]
     case HIP_API_ID_hipGetFuncBySymbol:
       if (data->args.hipGetFuncBySymbol.functionPtr) data->args.hipGetFuncBySymbol.functionPtr__val = *(data->args.hipGetFuncBySymbol.functionPtr);
+      break;
+// hipGetKArgsMallocs[('void**', 'kArgsAddr'), ('size_t', 'kArgsSize'), ('size_t', 'devId'), ('hipKArgsMallocsList*', 'mallocsList')]
+    case HIP_API_ID_hipGetKArgsMallocs:
+      if (data->args.hipGetKArgsMallocs.kArgsAddr) data->args.hipGetKArgsMallocs.kArgsAddr__val = *(data->args.hipGetKArgsMallocs.kArgsAddr);
+      if (data->args.hipGetKArgsMallocs.mallocsList) data->args.hipGetKArgsMallocs.mallocsList__val = *(data->args.hipGetKArgsMallocs.mallocsList);
       break;
 // hipGetKernelInfo[('const void*', 'hostFunction'), ('hipKernelInfo*', 'kernelData'), ('const char*', 'archName')]
     case HIP_API_ID_hipGetKernelInfo:
@@ -8459,6 +8497,12 @@ static inline const char* hipApiString(hip_api_id_t id, const hip_api_data_t* da
       oss << "ptr="; roctracer::hip_support::detail::operator<<(oss, data->args.hipFreeHost.ptr);
       oss << ")";
     break;
+    case HIP_API_ID_hipFreeKArgsMallocs:
+      oss << "hipFreeKArgsMallocs(";
+      if (data->args.hipFreeKArgsMallocs.mallocsList == NULL) oss << "mallocsList=NULL";
+      else { oss << "mallocsList="; roctracer::hip_support::detail::operator<<(oss, data->args.hipFreeKArgsMallocs.mallocsList__val); }
+      oss << ")";
+    break;
     case HIP_API_ID_hipFreeKernelInfo:
       oss << "hipFreeKernelInfo(";
       if (data->args.hipFreeKernelInfo.kernelData == NULL) oss << "kernelData=NULL";
@@ -8562,6 +8606,16 @@ static inline const char* hipApiString(hip_api_id_t id, const hip_api_data_t* da
       if (data->args.hipGetFuncBySymbol.functionPtr == NULL) oss << "functionPtr=NULL";
       else { oss << "functionPtr="; roctracer::hip_support::detail::operator<<(oss, data->args.hipGetFuncBySymbol.functionPtr__val); }
       oss << ", symbolPtr="; roctracer::hip_support::detail::operator<<(oss, data->args.hipGetFuncBySymbol.symbolPtr);
+      oss << ")";
+    break;
+    case HIP_API_ID_hipGetKArgsMallocs:
+      oss << "hipGetKArgsMallocs(";
+      if (data->args.hipGetKArgsMallocs.kArgsAddr == NULL) oss << "kArgsAddr=NULL";
+      else { oss << "kArgsAddr="; roctracer::hip_support::detail::operator<<(oss, data->args.hipGetKArgsMallocs.kArgsAddr__val); }
+      oss << ", kArgsSize="; roctracer::hip_support::detail::operator<<(oss, data->args.hipGetKArgsMallocs.kArgsSize);
+      oss << ", devId="; roctracer::hip_support::detail::operator<<(oss, data->args.hipGetKArgsMallocs.devId);
+      if (data->args.hipGetKArgsMallocs.mallocsList == NULL) oss << ", mallocsList=NULL";
+      else { oss << ", mallocsList="; roctracer::hip_support::detail::operator<<(oss, data->args.hipGetKArgsMallocs.mallocsList__val); }
       oss << ")";
     break;
     case HIP_API_ID_hipGetKernelInfo:
