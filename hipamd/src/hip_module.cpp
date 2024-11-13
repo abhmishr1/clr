@@ -944,33 +944,6 @@ hipError_t hipGetKernelInfo(const void* hostFunction, hipKernelInfo* kernelData,
   amd::Program &program = kernel->program();
   auto devProgram =  program.getDeviceProgram(*g_devices.at(deviceId)->devices()[0]);
 
-  /*
-  // example of device program: demangled name
-  std::string demangledName;
-  devProgram->getDemangledName(devKernel->name(), demangledName);
-  std::cout << "demangled name: " << demangledName << std::endl;
-  */
-
-  /*
-  // example of device kernel: metadata
-  #if defined(USE_COMGR_LIBRARY)
-
-  std::cout << "kernel_code_handle: " << devKernel->KernelCodeHandle() << std::endl;
-  std::cout << ".name: " << devKernel->name() << std::endl;
-  std::cout << ".group_segment_fixed_size: " << devKernel->WorkgroupGroupSegmentByteSize() << std::endl;
-  std::cout << ".kernarg_segment_align: " << devKernel->KernargSegmentAlignment() << std::endl;
-  std::cout << ".kernarg_segment_size: " << devKernel->KernargSegmentByteSize() << std::endl;
-  std::cout << ".max_flat_workgroup_size: " << devKernel->workGroupInfo()->size_ << std::endl;
-  std::cout << ".private_segment_fixed_size: " << devKernel->WorkitemPrivateSegmentByteSize() << std::endl;
-  std::cout << ".sgpr_count: " << devKernel->workGroupInfo()->usedSGPRs_ << std::endl;
-  std::cout << ".uniform_work_group_size: " << devKernel->getUniformWorkGroupSize() << std::endl;
-  std::cout << ".vgpr_count: " << devKernel->workGroupInfo()->usedVGPRs_ << std::endl;
-  std::cout << ".wavefront_size: " << devKernel->workGroupInfo()->wavefrontSize_<< std::endl;
-  std::cout << ".workgroup_processor_mode: " << devKernel->workGroupInfo()->isWGPMode_ << std::endl;
-
-  #endif
-  */
-
   const amd::KernelSignature& signature = kernel->signature();
 
   // create vectors for kernel arguments sizes and offsets
