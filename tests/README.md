@@ -11,4 +11,8 @@
   ```
   ./run_tests.sh -t presil_kernel_data gfx90a gfx940 gfx1100
   ```
+  #### kargs_malloc
+  ```
+  ./run_tests.sh -t kargs_malloc
+  ```
 
