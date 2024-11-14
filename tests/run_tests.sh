@@ -50,6 +50,7 @@ if [ $# -eq 0 ]; then
         echo "Running $(basename $file)"
         echo -e "\n*********************************\n"
         "$file" $arch
+        echo -e "\nTest $(basename $file) complete\n"
     done
 else
     # Get test name
@@ -103,6 +104,29 @@ else
         echo "Running $(basename $test_executable) $@"
         echo -e "\n******************************************************\n"
         "$test_executable" $@
+        echo -e "\nTest $(basename $test_executable) complete\n"
+    fi
+
+    if [ $TEST_NAME = "kargs_malloc" ]; then
+
+        # Compile the file using hipcc
+        $cc -Wno-unused-result --std=c++20 -I$include_path -o "${test_file%%.*}" "$test_file"
+
+        # Path to your test executable
+        test_executable="$script_dir/unit_tests/$TEST_NAME"
+
+        # Check if the test executable exists
+        if [ ! -x "$test_executable" ]; then
+            echo "Error: Test executable not found at $test_executable"
+            exit 1
+        fi
+
+        # Run the test executable
+        echo -e "\n*********************************\n"
+        echo "Running $(basename $test_executable)"
+        echo -e "\n*********************************\n"
+        "$test_executable"
+        echo -e "\nTest $(basename $test_executable) complete\n"
     fi
 fi
 
