@@ -115,9 +115,20 @@ int main(int argc, char* argv[]) {
     kArgsVec.push_back(d_c);
     void** kArgs = kArgsVec.data();
 
+    hipError_t         hip_error;
     std::vector<void*> mallocsList;
 
-    check_error(hipGetKernelArgsMallocs(kArgs, szArgs, device_index, mallocsList));
+    hip_error = hipGetKernelArgsMallocs(kArgs, szArgs, device_index, mallocsList);
+
+    if (hip_error != hipSuccess) {
+      std::cout << "Ran with DEFAULT HIP. Pre-Sil HIP .so NOT used!" << std::endl;
+      check_error(hipFree(d_a));
+      check_error(hipFree(d_b));
+      check_error(hipFree(d_c));
+      check_error(hipEventDestroy(start_ev));
+      check_error(hipEventDestroy(stop_ev));
+      return 0;
+    }
 
     bool allArgsExist = true;
 
@@ -135,6 +146,8 @@ int main(int argc, char* argv[]) {
       std::cout << "All memory allocations were not found for this kernel!" << std::endl;
       std::cout << "TEST FAILED" << std::endl;
     }
+
+    std::cout << "Ran using Pre-Sil HIP .so!\n";
 
     check_error(hipFree(d_a));
     check_error(hipFree(d_b));
