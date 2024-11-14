@@ -41,12 +41,14 @@ if [ $# -eq 0 ]; then
     # Check if the file is a C++ source file
     if [[ "$file" == *.cpp ]]; then
         # Compile the file using hipcc
-        $cc --std=c++20 --offload-arch=$arch -I$include_path -o "${file%%.*}" "$file"
+        $cc -Wno-unused-result --std=c++20 --offload-arch=$arch -I$include_path -o "${file%%.*}" "$file"
     fi
     done
 
     find "$script_dir/unit_tests" -type f -executable -print0 | while IFS= read -r -d '' file; do
-        echo "Running $(basename $file) $arch"
+        echo -e "\n*********************************\n"
+        echo "Running $(basename $file)"
+        echo -e "\n*********************************\n"
         "$file" $arch
     done
 else
@@ -58,29 +60,31 @@ else
             ;;
             \?)
             echo "Invalid option -$OPTARG" >&2
+            echo "Available tests: presil_kernel_data, kargs_malloc"
             exit 1
             ;;
         esac
     done
 
-    shift $((OPTIND-1))
-    if [ $# -eq 0 ]; then
-        echo "No arch specified! Please specify an arch (e.g., gfx1100)"
+    # Path to your test file
+    test_file="$script_dir/unit_tests/$TEST_NAME.hip.cpp"
+
+    # Check if the test executable exists
+    if [ ! -f "$test_file" ]; then
+        echo "Error: Test file not found at $test_file"
+        echo "Available tests: presil_kernel_data, kargs_malloc"
         exit 1
     fi
-    remaining_args=$(IFS=,; echo "$*")
 
     # Run an individual test
     if [ $TEST_NAME = "presil_kernel_data" ]; then
 
-        # Path to your test file
-        test_file="$script_dir/unit_tests/$TEST_NAME.hip.cpp"
-
-        # Check if the test executable exists
-        if [ ! -f "$test_file" ]; then
-            echo "Error: Test file not found at $test_file"
+        shift $((OPTIND-1))
+        if [ $# -eq 0 ]; then
+            echo "No arch specified! Please specify an arch (e.g., gfx1100)"
             exit 1
         fi
+        remaining_args=$(IFS=,; echo "$*")
 
         # Compile the file using hipcc
         $cc --std=c++20 --offload-arch=$remaining_args -I$include_path -o "${test_file%%.*}" "$test_file"
@@ -95,7 +99,9 @@ else
         fi
 
         # Run the test executable
+        echo -e "\n******************************************************\n"
         echo "Running $(basename $test_executable) $@"
+        echo -e "\n******************************************************\n"
         "$test_executable" $@
     fi
 fi
