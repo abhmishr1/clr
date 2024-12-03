@@ -24,8 +24,12 @@ int main(int argc, char* argv[]) {
     hipError_t    hip_error;
     hipKernelInfo kernel_data;
 
+    if (argc == 1) {
+        std::cout << "No arch specified! Please specify an arch (e.g., gfx1100)" << std::endl;
+        return 0;
+    }
+
     for (int i = 1; i < argc; ++i) {
-        std::cout << "\nArch: " << argv[i] << std::endl;
 
         hip_error = hipGetKernelData((void *) triad_kernel<2,1,float>, &kernel_data, argv[i]);
 
@@ -33,6 +37,7 @@ int main(int argc, char* argv[]) {
             std::cout << "Ran with DEFAULT HIP. Pre-Sil HIP .so NOT used!" << std::endl;
             return 0;
         }
+        std::cout << "\nArch: " << argv[i] << std::endl;
         printf("kernel binary size: %zu \n", kernel_data.binary.size);
         printf("kernel binary:\n");
         for (int i = 0; i < kernel_data.binary.size; i++) {
@@ -64,7 +69,6 @@ int main(int argc, char* argv[]) {
         hip_error = hipFreeKernelData(&kernel_data);
     }
 
-    std::cout << "Hello World from CPU!\n";
     std::cout << "Ran using Pre-Sil HIP .so!\n";
     return 0;
 }
