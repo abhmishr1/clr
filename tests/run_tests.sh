@@ -54,13 +54,18 @@ if [ $# -eq 0 ]; then
     done
 else
     # Get test name
-    while getopts "t:" opt; do
+    while getopts "t:h" opt; do
         case $opt in
+            h)
+            echo "Usage: ./run_tests.sh -t TEST_NAME"
+            echo "Available tests: presil_kernel_data, kargs_malloc"
+            exit 1
+            ;;
             t)
             TEST_NAME=$OPTARG
             ;;
             \?)
-            echo "Invalid option -$OPTARG" >&2
+            echo "Invalid option; Use -t to run a particular test" >&2
             echo "Available tests: presil_kernel_data, kargs_malloc"
             exit 1
             ;;
