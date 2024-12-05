@@ -9,7 +9,6 @@ python3 build_presil_hip_clr.py
   - Export this directory to LD_LIBRARY_PATH in the following manner:
   ```
   export LD_LIBRARY_PATH=$PWD/build/hipamd/lib/:$LD_LIBRARY_PATH
-
   ```
   - Include files are in $PWD/build/hipamd/include/
   - Add this include path during compilation.
