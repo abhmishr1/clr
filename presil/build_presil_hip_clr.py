@@ -22,7 +22,7 @@ if os.path.isdir(clr_build_dir):
 os.mkdir(clr_build_dir)
 
 # build hip clr
-hip_dir = os.path.join(clr_build_dir, "hip")
+hip_dir = os.path.join(current_dir, "hip")
 
 if not os.path.isdir(hip_dir):
     os.mkdir(hip_dir)
