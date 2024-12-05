@@ -12,3 +12,5 @@ python3 build_presil_hip_clr.py
   ```
   - Include files are in $PWD/build/hipamd/include/
   - Add this include path during compilation.
+  
+- Test the presil build using tests in the tests directory.
