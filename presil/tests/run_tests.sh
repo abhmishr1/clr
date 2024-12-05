@@ -28,7 +28,9 @@ include_path="$clr_dir/build/hipamd/include"
 
 # Check if include path exists
 if [ ! -d "$include_path" ]; then
-  echo "include directory does not exist: $include_path; build clr"
+  echo "include directory does not exist: $include_path"
+  echo "build presil clr using ../build_presil_hip_clr.py"
+  echo -e "\nif you have custom paths to lib/ and include/, move it to $clr_dir/build/hipamd/lib/ and $clr_dir/build/hipamd/include/ respectively.\n"
   exit 1
 fi
 
