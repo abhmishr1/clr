@@ -37,6 +37,7 @@ release/
 debug/
 packages/
 install/
+presil/hip/
 .vs/
 .vscode/
 .cache/
