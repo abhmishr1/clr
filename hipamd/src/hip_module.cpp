@@ -946,6 +946,12 @@ hipError_t hipGetKernelInfo(const void* hostFunction, hipKernelInfo* kernelData,
 
   hip_error = PlatformState::instance().populateKernelInfoStruct(kernel, kernel_binary, kernelData);
 
+  #if defined(USE_COMGR_LIBRARY)
+  // add the kernarg_segment_size to the struct
+  kernelData->kernArgSegSize = devKernel->KernargSegmentByteSize();
+
+  #endif
+
   HIP_RETURN(hip_error);
 }
 
