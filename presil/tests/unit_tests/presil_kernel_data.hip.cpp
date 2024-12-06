@@ -66,6 +66,7 @@ int main(int argc, char* argv[]) {
                 }
             }
         }
+        printf("\n.kernarg_segment_size: %zu\n\n", kernel_data.kArgSegSize);
         // free the struct
         kernel_data.free();
     }
