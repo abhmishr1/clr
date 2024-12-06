@@ -1,4 +1,4 @@
-/* Copyright (c) 2015 - 2021 Advanced Micro Devices, Inc.
+/* Copyright (c) 2015 - 2024 Advanced Micro Devices, Inc.
 
  Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -22,8 +22,8 @@
 #include "hip_internal.hpp"
 #include "hip_platform.hpp"
 #include "platform/runtime.hpp"
-#include "utils/flags.hpp"
-#include "utils/versions.hpp"
+#include "rocclr/utils/flags.hpp"
+#include "rocclr/utils/versions.hpp"
 
 namespace hip {
 std::once_flag g_ihipInitialized;
@@ -48,10 +48,10 @@ void init(bool* status) {
   }
   ClPrint(amd::LOG_INFO, amd::LOG_INIT, "Direct Dispatch: %d", AMD_DIRECT_DISPATCH);
 
-
   const std::vector<amd::Device*>& devices = amd::Device::getDevices(CL_DEVICE_TYPE_GPU, true);
-
-  for (unsigned int i=0; i<devices.size(); i++) {
+  const size_t deviceCount = devices.size();
+  g_devices.reserve(deviceCount);  // Pre-allocate space for better performance
+  for (unsigned int i = 0; i < deviceCount; i++) {
     // Enable active wait on the device by default
     devices[i]->SetActiveWait(true);
     // use the eternal contexts that already exist for new hip::Device's here

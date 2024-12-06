@@ -682,11 +682,6 @@ bool Device::create() {
                    pciDeviceId_);
     return false;
   }
-  if (agent_isas.count != 1) {
-    LogPrintfError("HSA device %s (PCI ID %x) has %u ISAs but can only support a single ISA",
-                   agent_name, pciDeviceId_, agent_isas.count);
-    return false;
-  }
 
   uint32_t isa_name_length = 0;
   if (HSA_STATUS_SUCCESS !=
@@ -842,6 +837,12 @@ bool Device::create() {
   // Create signal for HMM prefetch operation on device
   if (HSA_STATUS_SUCCESS != hsa_signal_create(kInitSignalValueOne, 0, nullptr, &prefetch_signal_)) {
     return false;
+  }
+
+  if (AMD_LOG_LEVEL >= LOG_EXTRA_DEBUG) {
+    uint8_t logMask[8] = { 0 };
+    hsa_flag_set64(logMask, HSA_AMD_LOG_FLAG_BLIT_KERNEL_PKTS);
+    hsa_amd_enable_logging(logMask, outFile);
   }
 
   return true;
@@ -1209,7 +1210,8 @@ bool Device::populateOCLDeviceConstants() {
                                                &info_.globalMemCacheLineSize_)) {
     return false;
   }
-  assert(info_.globalMemCacheLineSize_ > 0);
+  info_.globalMemCacheLineSize_ = (info_.globalMemCacheLineSize_ != 0) ?
+                                         info_.globalMemCacheLineSize_ : 64;
 
   uint32_t cachesize[4] = {0};
   if (HSA_STATUS_SUCCESS !=
@@ -1813,11 +1815,24 @@ bool Device::populateOCLDeviceConstants() {
   HIP_MEM_POOL_USE_VM &= info_.virtualMemoryManagement_;
 
   switch (isa().versionMajor()) {
+    case (12):
+      if (isa().versionMinor() == 0) {
+        switch (isa().versionStepping()) {
+          case (0):
+          case (1):
+          default:
+            info_.vgprAllocGranularity_ = 24;
+            info_.vgprsPerSimd_ = 1536;
+            break;
+        }
+      }
+      break;
     case (11):
       if (isa().versionMinor() == 0) {
         switch (isa().versionStepping()) {
           case (0):
           case (1):
+          case (5):
             info_.vgprAllocGranularity_ = 24;
             info_.vgprsPerSimd_ = 1536;
             break;
@@ -2472,18 +2487,22 @@ void* Device::virtualAlloc(void* req_addr, size_t size, size_t alignment) {
   return mem->getSvmPtr();
 }
 
-void Device::virtualFree(void* addr) {
+bool Device::virtualFree(void* addr) {
   amd::Memory* memObj = amd::MemObjMap::FindVirtualMemObj(addr);
   if (memObj == nullptr) {
     LogPrintfError("Cannot find the Virtual MemObj entry for this addr 0x%x", addr);
   }
 
-  memObj->getContext().devices()[0]->DestroyVirtualBuffer(memObj);
+  if (!memObj->getContext().devices()[0]->DestroyVirtualBuffer(memObj)) {
+    return false;
+  }
 
   hsa_status_t hsa_status = hsa_amd_vmem_address_free(memObj->getSvmPtr(), memObj->getSize());
   if (hsa_status != HSA_STATUS_SUCCESS) {
     LogPrintfError("Failed hsa_amd_vmem_address_free. Failed with status:%d \n", hsa_status);
+    return false;
   }
+  return true;
 }
 
 bool Device::SetMemAccess(void* va_addr, size_t va_size, VmmAccess access_flags) {

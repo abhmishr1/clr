@@ -30,6 +30,7 @@
 #include "rocprintf.hpp"
 #include "hsa/hsa_ven_amd_aqlprofile.h"
 #include "rocsched.hpp"
+#include "device/device.hpp"
 
 namespace amd::roc {
 class Device;
@@ -248,7 +249,7 @@ class VirtualGPU : public device::VirtualDevice {
 
   class HwQueueTracker : public amd::EmbeddedObject {
    public:
-    HwQueueTracker(const VirtualGPU& gpu): gpu_(gpu), handlerPending_(false) {}
+    HwQueueTracker(const VirtualGPU& gpu): gpu_(gpu) {}
 
     ~HwQueueTracker();
 
@@ -270,7 +271,8 @@ class VirtualGPU : public device::VirtualDevice {
     HwQueueEngine GetActiveEngine() const { return engine_; }
 
     //! Returns the last submitted signal for a wait
-    std::vector<hsa_signal_t>& WaitingSignal(HwQueueEngine engine = HwQueueEngine::Compute);
+    std::vector<hsa_signal_t>& WaitingSignal(HwQueueEngine engine = HwQueueEngine::Compute,
+                                             bool forceHostWait = true);
 
     //! Resets current signal back to the previous one. It's necessary in a case of ROCr failure.
     void ResetCurrentSignal();
@@ -288,12 +290,6 @@ class VirtualGPU : public device::VirtualDevice {
 
     //! Empty check for external signals
     bool IsExternalSignalListEmpty() const { return external_signals_.empty(); }
-
-    //! Set the status to indicate a pending handler
-    void SetHandlerPending(bool pending) { handlerPending_ = pending; }
-
-    //! Check if callback has been queued
-    bool IsHandlerPending() const { return handlerPending_; }
 
     //! Get/Set SDMA profiling
     bool GetSDMAProfiling() { return sdma_profiling_; }
@@ -319,7 +315,6 @@ class VirtualGPU : public device::VirtualDevice {
     const VirtualGPU& gpu_;       //!< VirtualGPU, associated with this tracker
     std::vector<ProfilingSignal*> external_signals_; //!< External signals for a wait in this queue
     std::vector<hsa_signal_t> waiting_signals_;   //!< Current waiting signals in this queue
-    bool handlerPending_;         //!< This indicates if we have queued a callback handler
   };
 
   VirtualGPU(Device& device, bool profiling = false, bool cooperative = false,
@@ -348,8 +343,8 @@ class VirtualGPU : public device::VirtualDevice {
                             void* event_handle,  //!< Handle to OCL event for debugging
                             uint32_t sharedMemBytes = 0, //!< Shared memory size
                             amd::NDRangeKernelCommand* vcmd = nullptr, //!< Original launch command
-                            hsa_kernel_dispatch_packet_t* aql_packet = nullptr  //!< Scheduler launch
-                            );
+                            hsa_kernel_dispatch_packet_t* aql_packet = nullptr,  //!< Scheduler launch
+                            bool attach_signal = false);
   void submitNativeFn(amd::NativeFnCommand& cmd);
   void submitMarker(amd::Marker& cmd);
   void submitAccumulate(amd::AccumulateCommand& cmd);
@@ -427,16 +422,15 @@ class VirtualGPU : public device::VirtualDevice {
 
   void hasPendingDispatch() { hasPendingDispatch_ = true; }
   bool IsPendingDispatch() const { return (hasPendingDispatch_) ? true : false; }
-  void addSystemScope() { addSystemScope_ = true; }
+  void addSystemScope() {
+    addSystemScope_ = true;
+    fence_state_ = amd::Device::CacheState::kCacheStateInvalid;
+  }
   void SetCopyCommandType(cl_command_type type) { copy_command_type_ = type; }
 
   HwQueueTracker& Barriers() { return barriers_; }
 
   Timestamp* timestamp() const { return timestamp_; }
-
-  //! Indicates the status of the callback handler. The callback would process the commands
-  //! and would collect profiling data, update refcounts
-  bool isHandlerPending() const { return barriers_.IsHandlerPending(); }
 
   void* allocKernArg(size_t size, size_t alignment);
   bool isFenceDirty() const { return fence_dirty_; }
@@ -444,6 +438,7 @@ class VirtualGPU : public device::VirtualDevice {
 
   void setLastUsedSdmaEngine(uint32_t mask) { lastUsedSdmaEngineMask_ = mask; }
   uint32_t getLastUsedSdmaEngine() const { return lastUsedSdmaEngineMask_.load(); }
+  uint64_t getQueueID() { return gpu_queue_->id; }
 
   // } roc OpenCL integration
  private:
@@ -454,11 +449,12 @@ class VirtualGPU : public device::VirtualDevice {
                                 amd::AccumulateCommand* vcmd = nullptr);
   bool dispatchAqlPacket(hsa_kernel_dispatch_packet_t* packet, uint16_t header, uint16_t rest,
                          bool blocking = true, bool capturing = false,
-                         const uint8_t* aqlPacket = nullptr);
+                         const uint8_t* aqlPacket = nullptr, bool attach_signal = false);
   bool dispatchAqlPacket(hsa_barrier_and_packet_t* packet, uint16_t header,
-                        uint16_t rest, bool blocking = true);
+                        uint16_t rest, bool blocking = true, bool attach_signal = false);
   template <typename AqlPacket> bool dispatchGenericAqlPacket(AqlPacket* packet, uint16_t header,
-                                                              uint16_t rest, bool blocking);
+                                                              uint16_t rest, bool blocking,
+                                                              bool attach_signal = false);
 
   bool dispatchCounterAqlPacket(hsa_ext_amd_aql_pm4_packet_t* packet, const uint32_t gfxVersion,
                                 bool blocking, const hsa_ven_amd_aqlprofile_1_00_pfn_t* extApi);

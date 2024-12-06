@@ -24,7 +24,7 @@
 #include "vdi_common.hpp"
 #include "hip_prof_api.h"
 #include "trace_helper.h"
-#include "utils/debug.hpp"
+#include "rocclr/utils/debug.hpp"
 #include "hip_formatting.hpp"
 #include "hip_graph_capture.hpp"
 
@@ -89,8 +89,6 @@ struct GraphNode;
 struct GraphExec;
 struct UserObject;
 class Stream;
-extern void ReleaseGraphExec(int deviceId);
-extern void ReleaseGraphExec(hip::Stream* stream);
 typedef struct ihipIpcMemHandle_st {
   char ipc_handle[IHIP_IPC_MEM_HANDLE_SIZE];  ///< ipc memory handle on ROCr
   size_t psize;
@@ -114,7 +112,7 @@ const char* ihipGetErrorName(hipError_t hip_error);
 #define HIP_INIT(noReturn)                                                                         \
   {                                                                                                \
     bool status = true;                                                                            \
-    std::call_once(hip::g_ihipInitialized, hip::init, &status);                                         \
+    std::call_once(hip::g_ihipInitialized, hip::init, &status);                                    \
     if (!status && !noReturn) {                                                                    \
       HIP_RETURN(hipErrorInvalidDevice);                                                           \
     }                                                                                              \
@@ -127,16 +125,16 @@ const char* ihipGetErrorName(hipError_t hip_error);
 #define HIP_INIT_VOID()                                                                            \
   {                                                                                                \
     bool status = true;                                                                            \
-    std::call_once(hip::g_ihipInitialized, hip::init, &status);                                         \
-    if (hip::tls.device_ == nullptr && hip::g_devices.size() > 0) {                           \
-      hip::tls.device_ = hip::g_devices[0];                                                   \
-      amd::Os::setPreferredNumaNode(hip::g_devices[0]->devices()[0]->getPreferredNumaNode()); \
+    std::call_once(hip::g_ihipInitialized, hip::init, &status);                                    \
+    if (hip::tls.device_ == nullptr && hip::g_devices.size() > 0) {                                \
+      hip::tls.device_ = hip::g_devices[0];                                                        \
+      amd::Os::setPreferredNumaNode(hip::g_devices[0]->devices()[0]->getPreferredNumaNode());      \
     }                                                                                              \
   }
 
 
 #define HIP_API_PRINT(...)                                          \
-  uint64_t startTimeUs=0;                                           \
+  uint64_t startTimeUs = 0;                                         \
   HIPPrintDuration(amd::LOG_INFO, amd::LOG_API, &startTimeUs,       \
                   "%s %s ( %s ) %s", KGRN,                          \
                   __func__, ToString( __VA_ARGS__ ).c_str(), KNRM);
@@ -166,19 +164,36 @@ const char* ihipGetErrorName(hipError_t hip_error);
     HIP_RETURN(hipErrorNoDevice);                                                                  \
   }
 
-#define HIP_INIT_API_NO_RETURN(cid, ...)                     \
+#define HIP_INIT_API_NO_RETURN(cid, ...)                                                           \
   HIP_INIT_API_INTERNAL(1, cid, __VA_ARGS__)
 
 #define HIP_RETURN_DURATION(ret, ...)                                                              \
-  hip::tls.last_error_ = ret;                                                                      \
+  hip::tls.last_command_error_ = ret;                                                              \
+  if (DEBUG_HIP_7_PREVIEW & amd::CHANGE_HIP_GET_LAST_ERROR) {                                      \
+    if (hip::tls.last_command_error_ != hipSuccess &&                                              \
+           hip::tls.last_command_error_ != hipErrorNotReady) {                                     \
+      hip::tls.last_error_ = hip::tls.last_command_error_;                                         \
+    }                                                                                              \
+  } else {                                                                                         \
+    hip::tls.last_error_ = hip::tls.last_command_error_;                                           \
+  }                                                                                                \
   HIPPrintDuration(amd::LOG_INFO, amd::LOG_API, &startTimeUs, "%s: Returned %s : %s", __func__,    \
-                   hip::ihipGetErrorName(hip::tls.last_error_), ToString(__VA_ARGS__).c_str());    \
-  return hip::tls.last_error_;
+                   hip::ihipGetErrorName(hip::tls.last_command_error_),                            \
+                   ToString(__VA_ARGS__).c_str());                                                 \
+  return hip::tls.last_command_error_;
 
-#define HIP_RETURN(ret, ...)                      \
-  hip::tls.last_error_ = ret;                         \
-  HIP_ERROR_PRINT(hip::tls.last_error_, __VA_ARGS__)  \
-  return hip::tls.last_error_;
+#define HIP_RETURN(ret, ...)                                                                       \
+  hip::tls.last_command_error_ = ret;                                                              \
+  if (DEBUG_HIP_7_PREVIEW & amd::CHANGE_HIP_GET_LAST_ERROR) {                                      \
+    if (hip::tls.last_command_error_ != hipSuccess &&                                              \
+           hip::tls.last_command_error_ != hipErrorNotReady) {                                     \
+      hip::tls.last_error_ = hip::tls.last_command_error_;                                         \
+    }                                                                                              \
+  } else {                                                                                         \
+    hip::tls.last_error_ = hip::tls.last_command_error_;                                           \
+  }                                                                                                \
+  HIP_ERROR_PRINT(hip::tls.last_command_error_, __VA_ARGS__)                                       \
+  return hip::tls.last_command_error_;
 
 #define HIP_RETURN_ONFAIL(func)          \
   do {                                   \
@@ -405,6 +420,8 @@ public:
       pCaptureGraph_ = pGraph;
       captureStatus_ = hipStreamCaptureStatusActive;
     }
+    /// Reset graph to nullptr when capture is invalidated, but keep the status
+    void ResetCaptureGraph() { pCaptureGraph_ = nullptr; }
     void SetCaptureId() {
       // ID is generated in Begin Capture i.e.. when capture status is active
       captureID_ = GenerateCaptureID();
@@ -471,7 +488,7 @@ public:
     // Device lock
     amd::Monitor lock_{true};
     // Guards device stream set
-    amd::Monitor streamSetLock{};
+    std::shared_mutex streamSetLock;
     std::unordered_set<hip::Stream*> streamSet;
     /// ROCclr context
     amd::Context* context_;
@@ -595,7 +612,7 @@ public:
 
     void destroyAllStreams();
 
-    void SyncAllStreams( bool cpu_wait = true);
+    void SyncAllStreams( bool cpu_wait = true, bool wait_blocking_streams_only = false);
 
     bool StreamCaptureBlocking();
 
@@ -610,7 +627,7 @@ public:
   public:
     Device* device_;
     std::stack<Device*> ctxt_stack_;
-    hipError_t last_error_;
+    hipError_t last_error_, last_command_error_;
     std::vector<hip::Stream*> capture_streams_;
     hipStreamCaptureMode stream_capture_mode_;
     std::stack<ihipExec_t> exec_stack_;
@@ -618,6 +635,7 @@ public:
 
     TlsAggregator(): device_(nullptr),
       last_error_(hipSuccess),
+      last_command_error_(hipSuccess),
       stream_capture_mode_(hipStreamCaptureModeGlobal) {
     }
     ~TlsAggregator() {

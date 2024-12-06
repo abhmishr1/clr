@@ -2062,6 +2062,7 @@ bool Device::globalFreeMemory(size_t* freeMemory) const {
     if (system_total_alloced > total_alloced) {
       total_alloced = system_total_alloced;
     }
+    system_total_alloced = mem_budget_info.usage[Pal::GpuHeapGroupNonLocal];
     // Avoid possible negative values in case of extra alignments
     if (mem_budget_info.usage[Pal::GpuHeapGroupNonLocal] >
         (resourceCache().cacheSize() - cache_group_local)) {
@@ -2292,7 +2293,12 @@ bool Device::validateKernel(const amd::Kernel& kernel, const device::VirtualDevi
   // Find the number of scratch registers used in the kernel
   const device::Kernel* devKernel = kernel.getDeviceKernel(*this);
   uint32_t regNum = static_cast<uint32_t>(devKernel->workGroupInfo()->scratchRegs_);
-  regNum = std::max<uint32_t>(static_cast<uint32_t>(stack_size_) / sizeof(uint32_t), regNum);
+  // OCL does not have API to set dynamic stack size i.e. hipDeviceSetLimit and hence there
+  // is no need for OCL to refresh value here and even for HIP, Update should be only if
+  // compiler notifies use of stack size.
+  if (IS_HIP && (devKernel->workGroupInfo()->usedStackSize_ & 0x1) == 0x1) {
+    regNum = std::max<uint32_t>(static_cast<uint32_t>(stack_size_) / sizeof(uint32_t), regNum);
+  }
   const VirtualGPU* vgpu = static_cast<const VirtualGPU*>(vdev);
 
   if (!allocScratch(regNum, vgpu, devKernel->workGroupInfo()->usedVGPRs_)) {
@@ -2511,16 +2517,18 @@ void* Device::virtualAlloc(void* addr, size_t size, size_t alignment) {
 }
 
 // ================================================================================================
-void Device::virtualFree(void* addr) {
+bool Device::virtualFree(void* addr) {
   auto vaddr_mem_obj = amd::MemObjMap::FindVirtualMemObj(addr);
   if (vaddr_mem_obj == nullptr) {
     LogPrintfError("Cannot find any mem_obj for addr: 0x%x \n", addr);
-    return;
+    return false;
   }
 
   if (!vaddr_mem_obj->getContext().devices()[0]->DestroyVirtualBuffer(vaddr_mem_obj)) {
     LogPrintfError("Cannot destroy mem_obj:0x%x for addr: 0x%x \n", vaddr_mem_obj, addr);
+    return false;
   }
+  return true;
 }
 
 // ================================================================================================

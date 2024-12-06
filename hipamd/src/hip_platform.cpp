@@ -76,7 +76,10 @@ void** __hipRegisterFatBinary(const void* data) {
                    fbwrapper->version);
     return nullptr;
   }
-  return reinterpret_cast<void**>(PlatformState::instance().addFatBinary(fbwrapper->binary));
+
+  bool success{};
+  auto fat_binary_info = PlatformState::instance().addFatBinary(fbwrapper->binary, success);
+  return success ? reinterpret_cast<void**>(fat_binary_info) : nullptr;
 }
 
 void __hipRegisterFunction(hip::FatBinaryInfo** modules, const void* hostFunction,
@@ -88,8 +91,13 @@ void __hipRegisterFunction(hip::FatBinaryInfo** modules, const void* hostFunctio
     return var ? atoi(var) : 1;
   }()};
   hipError_t hip_error = hipSuccess;
-  hip::Function* func = new hip::Function(std::string(deviceName), modules);
-  hip_error = PlatformState::instance().registerStatFunction(hostFunction, func);
+  // Compiler might share same hostFunction and hence it's needless to have another
+  // hip::Function and hip::Function is stored in map with hostFunction as key.
+  // Creating hip::Function in such case, Leaks it.
+  if (PlatformState::instance().getStatFuncName(hostFunction) == nullptr) {
+    hip::Function* func = new hip::Function(std::string(deviceName), modules);
+    hip_error = PlatformState::instance().registerStatFunction(hostFunction, func);
+  }
   guarantee((hip_error == hipSuccess), "Cannot register Static function, error: %d", hip_error);
 
   if (!enable_deferred_loading) {
@@ -273,6 +281,9 @@ hipError_t hipLaunchByPtr(const void* hostFunction) {
   size_t size = exec.arguments_.size();
   void* extra[] = {HIP_LAUNCH_PARAM_BUFFER_POINTER, &exec.arguments_[0],
                    HIP_LAUNCH_PARAM_BUFFER_SIZE, &size, HIP_LAUNCH_PARAM_END};
+
+  STREAM_CAPTURE(hipLaunchByPtr, exec.hStream_, func, exec.blockDim_, exec.gridDim_,
+                 exec.sharedMem_, extra);
 
   HIP_RETURN(hipModuleLaunchKernel(func, exec.gridDim_.x, exec.gridDim_.y, exec.gridDim_.z,
                                    exec.blockDim_.x, exec.blockDim_.y, exec.blockDim_.z,
@@ -951,6 +962,12 @@ hipError_t PlatformState::getDynFunc(hipFunction_t* hfunc, hipModule_t hmod,
   return it->second->getDynFunc(hfunc, func_name);
 }
 
+bool PlatformState::isValidDynFunc(const void* hfunc) {
+  amd::ScopedLock lock(lock_);
+  return std::any_of(dynCO_map_.begin(), dynCO_map_.end(),
+                     [&](auto& it) { return it.second->isValidDynFunc(hfunc); });
+}
+
 hipError_t PlatformState::getDynGlobalVar(const char* hostVar, hipModule_t hmod,
                                           hipDeviceptr_t* dev_ptr, size_t* size_ptr) {
   amd::ScopedLock lock(lock_);
@@ -1039,8 +1056,8 @@ hipError_t PlatformState::digestFatBinary(const void* data, hip::FatBinaryInfo*&
   return statCO_.digestFatBinary(data, programs);
 }
 
-hip::FatBinaryInfo** PlatformState::addFatBinary(const void* data) {
-  return statCO_.addFatBinary(data, initialized_);
+hip::FatBinaryInfo** PlatformState::addFatBinary(const void* data, bool& success) {
+  return statCO_.addFatBinary(data, initialized_, success);
 }
 
 hipError_t PlatformState::removeFatBinary(hip::FatBinaryInfo** module) {
