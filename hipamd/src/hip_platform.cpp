@@ -783,6 +783,9 @@ hipError_t PlatformState::populateKernelInfoStruct(amd::Kernel* kernel, kernelBi
   hip_error = PlatformState::instance().template createVector<hipVectorUint8>(&(kernelData->kernArgsSizes), signature.numParametersAll());
   hip_error = PlatformState::instance().template createVector<hipVectorUint8>(&(kernelData->kernArgsOffsets), signature.numParametersAll());
 
+  // create vector for kernel arguments hidden or not
+  hip_error = PlatformState::instance().template createVector<hipVectorUint8>(&(kernelData->kernArgsHidden), signature.numParametersAll());
+
   // create vector for kernel arguments access qualifiers
   hip_error = PlatformState::instance().template createVector<hipVectorUint8>(&(kernelData->kernArgsAccQualifiers), signature.numParameters());
 
@@ -791,6 +794,7 @@ hipError_t PlatformState::populateKernelInfoStruct(amd::Kernel* kernel, kernelBi
     const amd::KernelParameterDescriptor& desc = signature.at(i);
     hip_error = PlatformState::instance().template vectorPushBack<hipVectorUint8, uint8_t>(&(kernelData->kernArgsSizes), desc.size_);
     hip_error = PlatformState::instance().template vectorPushBack<hipVectorUint8, uint8_t>(&(kernelData->kernArgsOffsets), desc.offset_);
+    hip_error = PlatformState::instance().template vectorPushBack<hipVectorUint8, uint8_t>(&(kernelData->kernArgsHidden), desc.info_.hidden_);
     if (desc.info_.globalBuffer_) {
       switch (desc.actualAccQualifier_)
       {
@@ -833,6 +837,7 @@ hipError_t PlatformState::freeKernelInfoStruct(hipKernelInfo* kernelData) {
   hip_error = PlatformState::instance().template freeVector<hipVectorUint8>(&(kernelData->binary));
   hip_error = PlatformState::instance().template freeVector<hipVectorUint8>(&(kernelData->kernArgsSizes));
   hip_error = PlatformState::instance().template freeVector<hipVectorUint8>(&(kernelData->kernArgsOffsets));
+  hip_error = PlatformState::instance().template freeVector<hipVectorUint8>(&(kernelData->kernArgsHidden));
   hip_error = PlatformState::instance().template freeVector<hipVectorUint8>(&(kernelData->kernArgsAccQualifiers));
 
   return hip_error;

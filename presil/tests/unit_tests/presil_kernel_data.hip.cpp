@@ -47,6 +47,9 @@ int main(int argc, char* argv[]) {
         for (size_t i = 0; i < kernel_data.kArgsSizes.size(); ++i) {
             printf("\n - .size:\t%i\n", kernel_data.kArgsSizes[i]);
             printf("   .offset:\t%i\n", kernel_data.kArgsOffsets[i]);
+            if (kernel_data.kArgsHidden[i]) {
+                printf("   .value_kind:\thidden\n");
+            }
             if (i < kernel_data.kArgsAccQuals.size()) {
                 switch (kernel_data.kArgsAccQuals[i])
                 {
