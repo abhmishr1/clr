@@ -48,6 +48,10 @@ void init(bool* status) {
   }
   ClPrint(amd::LOG_INFO, amd::LOG_INIT, "Direct Dispatch: %d", AMD_DIRECT_DISPATCH);
 
+  if (HIP_USE_SIM == 0) {
+    std::cout << std::endl << "*** Bypassing silicon to use simulator: FFM; Arch: " << HIP_SIM_ARCH << " ***" << std::endl << std::endl;
+  }
+
   const std::vector<amd::Device*>& devices = amd::Device::getDevices(CL_DEVICE_TYPE_GPU, true);
   const size_t deviceCount = devices.size();
   g_devices.reserve(deviceCount);  // Pre-allocate space for better performance
