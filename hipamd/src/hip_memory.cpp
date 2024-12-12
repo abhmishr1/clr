@@ -82,6 +82,11 @@ hipError_t ihipFree(void *ptr) {
     return hipSuccess;
   }
 
+  if (HIP_USE_SIM == 0) {
+    free(ptr);
+    return hipSuccess;
+  }
+
   size_t offset = 0;
   amd::Memory* memory_object = getMemoryObject(ptr, offset);
   if (memory_object != nullptr) {
@@ -310,6 +315,11 @@ hipError_t ihipMalloc(void** ptr, size_t sizeBytes, unsigned int flags)
   }
   if (sizeBytes == 0) {
     *ptr = nullptr;
+    return hipSuccess;
+  }
+
+  if (HIP_USE_SIM == 0) {
+    *ptr = malloc(sizeBytes);
     return hipSuccess;
   }
 
@@ -622,6 +632,10 @@ hipError_t ihipMemcpy(void* dst, const void* src, size_t sizeBytes, hipMemcpyKin
   hipError_t status;
   if (sizeBytes == 0) {
     // Skip if nothing needs writing.
+    return hipSuccess;
+  }
+  if (HIP_USE_SIM == 0) {
+    std::memcpy(dst, src, sizeBytes);
     return hipSuccess;
   }
   status = ihipMemcpy_validate(dst, src, sizeBytes, kind);
@@ -3390,6 +3404,11 @@ hipError_t ihipMemset(void* dst, int64_t value, size_t valueSize, size_t sizeByt
   do {
     // Nothing to do, fill size is 0. Returns hipSuccess.
     if (sizeBytes == 0) {
+      break;
+    }
+
+    if (HIP_USE_SIM == 0) {
+      std::memset(dst, value, sizeBytes);
       break;
     }
 
