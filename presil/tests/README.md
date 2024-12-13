@@ -15,4 +15,8 @@
   ```
   ./run_tests.sh -t kargs_malloc
   ```
+  #### ffm_sim_hook
+  ```
+  ./run_tests.sh -t ffm_sim_hook
+  ```
 
