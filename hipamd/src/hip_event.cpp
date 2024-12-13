@@ -370,6 +370,10 @@ hipError_t hipEventDestroy(hipEvent_t event) {
 hipError_t hipEventElapsedTime(float* ms, hipEvent_t start, hipEvent_t stop) {
   HIP_INIT_API(hipEventElapsedTime, ms, start, stop);
 
+  if (HIP_USE_SIM == 0) {
+    return hipSuccess;
+  }
+
   if (ms == nullptr) {
     HIP_RETURN(hipErrorInvalidValue);
   }
@@ -431,6 +435,10 @@ hipError_t hipEventRecord_spt(hipEvent_t event, hipStream_t stream) {
 
 hipError_t hipEventSynchronize(hipEvent_t event) {
   HIP_INIT_API(hipEventSynchronize, event);
+
+  if (HIP_USE_SIM == 0) {
+    return hipSuccess;
+  }
 
   if (event == nullptr) {
     HIP_RETURN(hipErrorInvalidHandle);
