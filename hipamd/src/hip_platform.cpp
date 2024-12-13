@@ -19,6 +19,7 @@
  THE SOFTWARE. */
 
 #include <hip/hip_runtime.h>
+#include <hip/hip_runtime_hooks.h>
 #include <hip/texture_types.h>
 #include "hip_platform.hpp"
 #include "hip_internal.hpp"
@@ -619,6 +620,19 @@ hipError_t ihipLaunchKernel(const void* hostFunction, dim3 gridDim, dim3 blockDi
                             hipEvent_t stopEvent, int flags) {
   if (!hip::isValid(stream)) {
     return hipErrorInvalidValue;
+  }
+  if (HIP_USE_SIM == 0) {
+    hipKernelInfo kernelData;
+    size_t kArgsSize = 0;
+
+    hipError_t hip_error = hipGetKernelInfo(hostFunction, &kernelData, HIP_SIM_ARCH);
+    for (int i = 0; i < kernelData.kernArgsSizes.size; i++) {
+      if (!kernelData.kernArgsHidden.data[i]) {
+        kArgsSize += kernelData.kernArgsSizes.data[i];
+      }
+    }
+    return hipLaunchKernel_sim(kernelData.binary.data, kernelData.binary.size,
+                               args, kArgsSize, gridDim, blockDim, sharedMemBytes, stream);
   }
   hipFunction_t func = nullptr;
   int deviceId = hip::Stream::DeviceId(stream);
