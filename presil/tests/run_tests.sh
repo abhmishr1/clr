@@ -138,6 +138,56 @@ else
         "$test_executable"
         echo -e "\nTest $(basename $test_executable) complete\n"
     fi
+
+    if [ $TEST_NAME = "ffm_sim_hook" ]; then
+
+        # export FFM env variables
+        export HIP_USE_SIM=0
+        export HIP_SIM_ARCH=$arch
+
+        # make so file path
+        make_so_file="$script_dir/unit_tests/add_ons/make_hooks_so.cpp"
+
+        # check to see if make so file exists
+        if [ ! -f "$make_so_file" ]; then
+            echo "Error: make .so file not found at $make_so_file"
+            exit 1
+        fi
+
+        # hooks .so file path
+        hook_so_file="$script_dir/unit_tests/add_ons/libhip_runtimehooks.so"
+
+        # compile hooks cpp file in add_ons to generate an .so
+        $cc -fPIC -shared -o $hook_so_file $make_so_file
+
+        # Check if .so created
+        if [ ! -f "$hook_so_file" ]; then
+            echo "Error: .so not found at $hook_so_file"
+            exit 1
+        fi
+
+        # Compile the file using hipcc
+        $cc -Wno-unused-result -I$include_path -o "${test_file%%.*}" "$test_file"
+
+        # Path to your test executable
+        test_executable="$script_dir/unit_tests/$TEST_NAME"
+
+        # Check if the test executable exists
+        if [ ! -x "$test_executable" ]; then
+            echo "Error: Test executable not found at $test_executable"
+            exit 1
+        fi
+
+        # Add hook so path to ld_library_path
+        export LD_LIBRARY_PATH=$script_dir/unit_tests/add_ons/:$LD_LIBRARY_PATH
+
+        # Run the test executable
+        echo -e "\n*********************************\n"
+        echo "Running $(basename $test_executable)"
+        echo -e "\n*********************************\n"
+        "$test_executable"
+        echo -e "\nTest $(basename $test_executable) complete\n"
+    fi
 fi
 
 # Find all executable files and delete them
