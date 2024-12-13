@@ -34,6 +34,9 @@ if [ ! -d "$include_path" ]; then
   exit 1
 fi
 
+# Find any existing executable files and delete them
+find "$script_dir/unit_tests" -type f -executable -delete
+
 # Find and run all executables if no test specified
 if [ $# -eq 0 ]; then
 
@@ -43,7 +46,7 @@ if [ $# -eq 0 ]; then
     # Check if the file is a C++ source file
     if [[ "$file" == *.cpp ]]; then
         # Compile the file using hipcc
-        $cc -Wno-unused-result --std=c++20 --offload-arch=$arch -I$include_path -o "${file%%.*}" "$file"
+        $cc -Wno-unused-result --offload-arch=$arch -I$include_path -o "${file%%.*}" "$file"
     fi
     done
 
@@ -95,7 +98,7 @@ else
         remaining_args=$(IFS=,; echo "$*")
 
         # Compile the file using hipcc
-        $cc --std=c++20 --offload-arch=$remaining_args -I$include_path -o "${test_file%%.*}" "$test_file"
+        $cc --offload-arch=$remaining_args -I$include_path -o "${test_file%%.*}" "$test_file"
 
         # Path to your test executable
         test_executable="$script_dir/unit_tests/$TEST_NAME"
@@ -117,7 +120,7 @@ else
     if [ $TEST_NAME = "kargs_malloc" ]; then
 
         # Compile the file using hipcc
-        $cc -Wno-unused-result --std=c++20 -I$include_path -o "${test_file%%.*}" "$test_file"
+        $cc -Wno-unused-result -I$include_path -o "${test_file%%.*}" "$test_file"
 
         # Path to your test executable
         test_executable="$script_dir/unit_tests/$TEST_NAME"
