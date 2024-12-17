@@ -77,6 +77,7 @@ static const AMDDeviceInfo DeviceInfo[] = {
     {"gfx1103", "gfx1103", 4, 32, 1, 256, 64 * Ki, 32, 11, 0 },
     {"gfx1200", "gfx1200", 4, 32, 1, 256, 64 * Ki, 32, 12, 0 },
     {"gfx1201", "gfx1201", 4, 32, 1, 256, 64 * Ki, 32, 12, 0 },
+    {"gfx1210", "gfx1210", 4, 32, 1, 256, 64 * Ki, 32, 12, 0 },
 };
 
 const int DeviceInfoSize = sizeof(DeviceInfo) / sizeof(AMDDeviceInfo);

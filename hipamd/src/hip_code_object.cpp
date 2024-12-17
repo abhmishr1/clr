@@ -334,6 +334,11 @@ static bool getProcName(uint32_t EFlags, std::string& proc_name, bool& xnackSupp
       sramEccSupported = false;
       proc_name = "gfx1201";
       break;
+    case EF_AMDGPU_MACH_AMDGCN_GFX1210:
+      xnackSupported = false;
+      sramEccSupported = false;
+      proc_name = "gfx1210";
+      break;
     case EF_AMDGPU_MACH_AMDGCN_GFX9_GENERIC:
       xnackSupported = true;
       sramEccSupported = false;
@@ -478,6 +483,7 @@ static bool isCompatibleWithGenericTarget(std::string& coTarget, std::string& ag
       // "gfx12-generic"
       {"gfx1200", "gfx12-generic"},
       {"gfx1201", "gfx12-generic"},
+      {"gfx1210", "gfx12-generic"},
   };
   auto search = genericTargetMap.find(agentTarget);
   return search != genericTargetMap.end() && coTarget == search->second;

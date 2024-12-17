@@ -31,7 +31,7 @@
 #define _HIP_INCLUDE_HIP_AMD_DETAIL_HIP_FP8_H_
 
 #if (defined(__gfx940__) || defined(__gfx941__) || defined(__gfx942__) || defined(__gfx1200__) ||  \
-     defined(__gfx1201__)) &&                                                                      \
+     defined(__gfx1201__) || defined(__gfx1210__)) &&                                              \
     __HIP_DEVICE_COMPILE__
 #define HIP_FP8_CVT_FAST_PATH 1
 #else
@@ -41,7 +41,7 @@
 #if (defined(__gfx940__) || defined(__gfx941__) || defined(__gfx942__)) && __HIP_DEVICE_COMPILE__
 #define HIP_FP8_TYPE_OCP 0
 #define HIP_FP8_TYPE_FNUZ 1
-#elif (defined(__gfx1200__) || defined(__gfx1201__)) && __HIP_DEVICE_COMPILE__
+#elif (defined(__gfx1200__) || defined(__gfx1201__) || defined(__gfx1210__)) && __HIP_DEVICE_COMPILE__
 #define HIP_FP8_TYPE_OCP 1
 #define HIP_FP8_TYPE_FNUZ 0
 #else
