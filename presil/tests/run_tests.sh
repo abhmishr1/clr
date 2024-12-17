@@ -37,68 +37,33 @@ fi
 # Find any existing executable files and delete them
 find "$script_dir/unit_tests" -type f -executable -delete
 
-# Find and run all executables if no test specified
-if [ $# -eq 0 ]; then
+# TESTS
 
-    # Loop through all files in the unit_tests directory
-    for file in "$script_dir/unit_tests"/*
-    do
-    # Check if the file is a C++ source file
-    if [[ "$file" == *.cpp ]]; then
-        # Compile the file using hipcc
-        $cc -Wno-unused-result --offload-arch=$arch -I$include_path -o "${file%%.*}" "$file"
-    fi
-    done
+# Test 1: presil_kernel_data
+presil_kernel_data() {
+    if [ "$1" = "-h" ]; then
+        echo -e "\n\tHelp information for Test 'presil_kernel_data'"
+        echo -e "\t----------------------------------------------"
+        echo -e "\n\tUsage: ./run_tests.sh -t presil_kernel_data"
+        echo -e "\twill compile and run on current device ($arch)"
+        echo -e "\n\tCan pass multiple archs as arguments separated by spaces:"
+        echo -e "\t./run_tests.sh -t presil_kernel_data gfx90a gfx940 gfx1100\n"
+    else
+        # Test name
+        TEST_NAME=presil_kernel_data
 
-    find "$script_dir/unit_tests" -type f -executable -print0 | while IFS= read -r -d '' file; do
-        echo -e "\n*********************************\n"
-        echo "Running $(basename $file)"
-        echo -e "\n*********************************\n"
-        "$file" $arch
-        echo -e "\nTest $(basename $file) complete\n"
-    done
-else
-    # Get test name
-    while getopts "t:h" opt; do
-        case $opt in
-            h)
-            echo "Usage: ./run_tests.sh -t TEST_NAME"
-            echo "Available tests: presil_kernel_data, kargs_malloc"
-            exit 1
-            ;;
-            t)
-            TEST_NAME=$OPTARG
-            ;;
-            \?)
-            echo "Invalid option; Use -t to run a particular test" >&2
-            echo "Available tests: presil_kernel_data, kargs_malloc"
-            exit 1
-            ;;
-        esac
-    done
+        # Path to your test file
+        test_file="$script_dir/unit_tests/$TEST_NAME.hip.cpp"
 
-    # Path to your test file
-    test_file="$script_dir/unit_tests/$TEST_NAME.hip.cpp"
-
-    # Check if the test executable exists
-    if [ ! -f "$test_file" ]; then
-        echo "Error: Test file not found at $test_file"
-        echo "Available tests: presil_kernel_data, kargs_malloc"
-        exit 1
-    fi
-
-    # Run an individual test
-    if [ $TEST_NAME = "presil_kernel_data" ]; then
-
-        shift $((OPTIND-1))
-        if [ $# -eq 0 ]; then
-            echo "No arch specified! Please specify an arch (e.g., gfx1100)"
+        # Check if the test executable exists
+        if [ ! -f "$test_file" ]; then
+            echo "Error: Test file not found at $test_file"
             exit 1
         fi
-        remaining_args=$(IFS=,; echo "$*")
+        archs=$(IFS=,; echo "$*")
 
         # Compile the file using hipcc
-        $cc --offload-arch=$remaining_args -I$include_path -o "${test_file%%.*}" "$test_file"
+        $cc --offload-arch=$archs -I$include_path -o "${test_file%%.*}" "$test_file"
 
         # Path to your test executable
         test_executable="$script_dir/unit_tests/$TEST_NAME"
@@ -116,9 +81,26 @@ else
         "$test_executable" $@
         echo -e "\nTest $(basename $test_executable) complete\n"
     fi
+}
 
-    if [ $TEST_NAME = "kargs_malloc" ]; then
+# Test 2: kargs_malloc
+kargs_malloc() {
+    if [ "$1" = "-h" ]; then
+        echo -e "\n\tHelp information for Test 'kargs_malloc'"
+        echo -e "\t----------------------------------------"
+        echo -e "\n\tUsage: ./run_tests.sh -t kargs_malloc\n"
+    else
+        # Test name
+        TEST_NAME=kargs_malloc
 
+        # Path to your test file
+        test_file="$script_dir/unit_tests/$TEST_NAME.hip.cpp"
+
+        # Check if the test executable exists
+        if [ ! -f "$test_file" ]; then
+            echo "Error: Test file not found at $test_file"
+            exit 1
+        fi
         # Compile the file using hipcc
         $cc -Wno-unused-result -I$include_path -o "${test_file%%.*}" "$test_file"
 
@@ -138,18 +120,31 @@ else
         "$test_executable"
         echo -e "\nTest $(basename $test_executable) complete\n"
     fi
+}
 
-    if [ $TEST_NAME = "ffm_sim_hook" ]; then
+# Test 3: ffm_sim_hook
+ffm_sim_hook() {
+    if [ "$1" = "-h" ]; then
+        echo -e "\n\tHelp information for Test 'ffm_sim_hook'"
+        echo -e "\t----------------------------------------"
+        echo -e "\n\tUsage: ./run_tests.sh -t ffm_sim_hook"
+        echo -e "\twill compile and run on current device ($arch)"
+        echo -e "\n\tTo use a different arch for FFM, pass it as an argument separated by space:"
+        echo -e "\t./run_tests.sh -t ffm_sim_hook gfx1200\n"
+    else
+        # Test name
+        TEST_NAME=ffm_sim_hook
 
-        # check to see if FFM arch is provided
-        shift $((OPTIND-1))
-        if [ $# -eq 0 ]; then
-            echo "No arch specified. Current device used ($arch)"
-            ffm_arch=$arch
-        else
-            remaining_arg=$(IFS=,; echo "$*")
-            ffm_arch=$remaining_arg
+        # Path to your test file
+        test_file="$script_dir/unit_tests/$TEST_NAME.hip.cpp"
+
+        # Check if the test executable exists
+        if [ ! -f "$test_file" ]; then
+            echo "Error: Test file not found at $test_file"
+            exit 1
         fi
+
+        ffm_arch=$(IFS=,; echo "$*")
 
         # export FFM env variables
         export HIP_USE_SIM=0
@@ -198,6 +193,59 @@ else
         "$test_executable"
         echo -e "\nTest $(basename $test_executable) complete\n"
     fi
+}
+
+# Check if test flag is passed as an argument
+if [ "$1" = "-t" ]; then
+  shift # shift arguments to ignore '-t'
+
+    # Run the specified test or show help message
+    case $1 in
+        presil_kernel_data)
+            shift
+            if [ $# -eq 0 ]; then
+                echo "No arch specified, current device used ($arch)"
+                presil_kernel_data $arch
+            else
+                presil_kernel_data $@
+            fi
+            ;;
+        kargs_malloc)
+            kargs_malloc
+            ;;
+        ffm_sim_hook)
+            shift
+            if [ $# -eq 0 ]; then
+                echo "No arch specified, current device used ($arch)"
+                ffm_sim_hook $arch
+            else
+                ffm_sim_hook $@
+            fi
+            ;;
+        *)
+            echo -e "\nInvalid Test Name!"
+            echo -e "Available tests: presil_kernel_data, kargs_malloc, ffm_sim_hook\n"
+            exit 1
+            ;;
+    esac
+
+else
+  # Run all tests or show help message
+  if [ "$1" = "-h" ]; then
+    echo -e "\nHelp information for run_tests.sh"
+    echo -e "----------------------------------\n"
+    echo "Usage: ./run_tests.sh"
+    echo "to run all tests"
+    echo -e "\nTon run an individual test:\n ./run_tests.sh -t TEST_NAME"
+    echo -e "\nAvailable tests: presil_kernel_data, kargs_malloc, ffm_sim_hook\n"
+    presil_kernel_data -h
+    kargs_malloc -h
+    ffm_sim_hook -h
+  else
+    presil_kernel_data $arch
+    kargs_malloc
+    ffm_sim_hook $arch
+  fi
 fi
 
 # Find all executable files and delete them
