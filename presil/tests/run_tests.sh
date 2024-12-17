@@ -141,9 +141,19 @@ else
 
     if [ $TEST_NAME = "ffm_sim_hook" ]; then
 
+        # check to see if FFM arch is provided
+        shift $((OPTIND-1))
+        if [ $# -eq 0 ]; then
+            echo "No arch specified. Current device used ($arch)"
+            ffm_arch=$arch
+        else
+            remaining_arg=$(IFS=,; echo "$*")
+            ffm_arch=$remaining_arg
+        fi
+
         # export FFM env variables
         export HIP_USE_SIM=0
-        export HIP_SIM_ARCH=$arch
+        export HIP_SIM_ARCH=$ffm_arch
 
         # make so file path
         make_so_file="$script_dir/unit_tests/add_ons/make_hooks_so.cpp"
@@ -167,7 +177,7 @@ else
         fi
 
         # Compile the file using hipcc
-        $cc -Wno-unused-result -I$include_path -o "${test_file%%.*}" "$test_file"
+        $cc -Wno-unused-result --offload-arch=$ffm_arch -I$include_path -o "${test_file%%.*}" "$test_file"
 
         # Path to your test executable
         test_executable="$script_dir/unit_tests/$TEST_NAME"
