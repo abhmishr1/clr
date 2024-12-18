@@ -41,7 +41,7 @@ pip_install("CppHeaderParser")
 print("using cmake to build CLR using HIP...")
 clr_install_dir = os.path.join(clr_build_dir, "install")
 os.chdir(clr_build_dir)
-cmd = ["cmake", f"-DHIP_COMMON_DIR={hip_dir}", "-DHIP_PLATFORM=amd", "-DCLR_BUILD_HIP=ON", "-DCLR_BUILD_OCL=OFF", "-DCMAKE_PREFIX_PATH='/opt/rocm/;/opt/rocm/llvm/'", f"-DCMAKE_INSTALL_PREFIX={clr_install_dir}", "-DCMAKE_CXX_FLAGS='-std=c++20'", "../.."]
+cmd = ["cmake", f"-DHIP_COMMON_DIR={hip_dir}", "-DHIP_PLATFORM=amd", "-DCLR_BUILD_HIP=ON", "-DCLR_BUILD_OCL=OFF", "-DCMAKE_PREFIX_PATH='/opt/rocm/;/opt/rocm/llvm/'", f"-DCMAKE_INSTALL_PREFIX={clr_install_dir}", "../.."]
 subprocess.run(cmd, text=True)
 subprocess.run(["make -j$(nproc)"], shell=True, text=True)
 
