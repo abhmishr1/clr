@@ -15,14 +15,15 @@ from git import Repo
 
 # setting the directories
 current_dir = os.getcwd()
+presil_dir = os.path.dirname(__file__)
 
-clr_build_dir = os.path.join(current_dir, "build")
+clr_build_dir = os.path.join(presil_dir, "build")
 if os.path.isdir(clr_build_dir):
     shutil.rmtree(clr_build_dir)
 os.mkdir(clr_build_dir)
 
 # build hip clr
-hip_dir = os.path.join(current_dir, "hip")
+hip_dir = os.path.join(presil_dir, "hip")
 
 if not os.path.isdir(hip_dir):
     os.mkdir(hip_dir)
