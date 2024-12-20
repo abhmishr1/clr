@@ -631,8 +631,13 @@ hipError_t ihipLaunchKernel(const void* hostFunction, dim3 gridDim, dim3 blockDi
         kArgsSize += kernelData.kernArgsSizes.data[i];
       }
     }
-    return hipLaunchKernel_sim(kernelData.binary.data, kernelData.binary.size,
+    hip_error = hipLaunchKernel_sim(kernelData.binary.data, kernelData.binary.size,
                                args, kArgsSize, gridDim, blockDim, sharedMemBytes, stream);
+    if (hip_error != hipSuccess) {
+      std::cout << "Implementation for hipLaunchKernel_sim not found, please add one to libhip_runtimehooks.so" << std::endl;
+      return hipErrorLaunchFailure;
+    }
+    return hipSuccess;
   }
   hipFunction_t func = nullptr;
   int deviceId = hip::Stream::DeviceId(stream);
