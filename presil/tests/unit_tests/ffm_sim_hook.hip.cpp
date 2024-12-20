@@ -75,8 +75,6 @@ int main(int argc, char* argv[]) {
     }
 
     const unsigned int block_cnt = array_size / (TBSIZE * elements_per_lane * chunks_per_block);
-    hipEvent_t start_ev;
-    hipEvent_t stop_ev;
 
     float *d_a, *d_b, *d_c;
 
@@ -96,16 +94,7 @@ int main(int argc, char* argv[]) {
     check_error(hipMalloc(&d_c, array_size * sizeof(float)));
 
     hipLaunchKernel(triad_kernel<elements_per_lane, chunks_per_block, float>,
-                    dim3(block_cnt), dim3(TBSIZE), nullptr,d_a, d_b, d_c);
-    hipError_t hip_error = hipGetLastError();
-
-    if (hip_error != hipSuccess) {
-      std::cout << "Ran with DEFAULT HIP. Pre-Sil HIP .so NOT used!" << std::endl;
-      check_error(hipFree(d_a));
-      check_error(hipFree(d_b));
-      check_error(hipFree(d_c));
-      return 0;
-    }
+                    dim3(block_cnt), dim3(TBSIZE), nullptr, d_a, d_b, d_c);
 
     std::cout << "Stream triad kernel ran succesfully" << std::endl;
 
