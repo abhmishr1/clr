@@ -646,10 +646,6 @@ hipError_t ihipMemcpy(void* dst, const void* src, size_t sizeBytes, hipMemcpyKin
     // Skip if nothing needs writing.
     return hipSuccess;
   }
-  if (HIP_USE_SIM == 0) {
-    std::memcpy(dst, src, sizeBytes);
-    return hipSuccess;
-  }
   status = ihipMemcpy_validate(dst, src, sizeBytes, kind);
   if (status != hipSuccess) {
     return status;
@@ -819,6 +815,14 @@ hipError_t hipFree(void* ptr) {
 hipError_t hipMemcpy_common(void* dst, const void* src, size_t sizeBytes,
                             hipMemcpyKind kind, hipStream_t stream = nullptr) {
   CHECK_STREAM_CAPTURING();
+  if (HIP_USE_SIM == 0) {
+
+    hipError_t hip_error = hipMemcpy_sim(dst, src, sizeBytes, kind);
+    if (hip_error != hipSuccess) {
+      std::memcpy(dst, src, sizeBytes);
+    }
+    return hipSuccess;
+  }
   hip::Stream* hip_stream = nullptr;
 
   if (stream != nullptr && stream != hipStreamLegacy) {

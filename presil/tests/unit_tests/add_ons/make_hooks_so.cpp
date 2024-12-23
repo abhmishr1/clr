@@ -3,6 +3,7 @@
 
 #include <hip/hip_runtime.h>
 #include <iostream>
+#include <cstring>
 
 extern "C" hipError_t hipLaunchKernel_sim(const uint8_t* kernelBin,
                         size_t binSize, void** kArgs, size_t kArgsSize, dim3 gridDim, dim3 blockDim, size_t sharedMemBytes, hipStream_t stream) {
@@ -32,6 +33,14 @@ extern "C" hipError_t hipFree_sim(void* ptr) {
 
     std::cout << "FFM implementation of hipFree_sim" << std::endl;
     free(ptr);
+
+    return hipSuccess;
+}
+
+extern "C" hipError_t hipMemcpy_sim(void* dst, const void* src, size_t sizeBytes, hipMemcpyKind kind) {
+
+    std::cout << "FFM implementation of hipMemcpy_sim" << std::endl;
+    std::memcpy(dst, src, sizeBytes);
 
     return hipSuccess;
 }

@@ -59,4 +59,6 @@ hipError_t hipMalloc_sim(void** ptr, size_t sizeBytes, unsigned int flags);
 
 hipError_t hipFree_sim(void* ptr);
 
+hipError_t hipMemcpy_sim(void* dst, const void* src, size_t sizeBytes, hipMemcpyKind kind);
+
 

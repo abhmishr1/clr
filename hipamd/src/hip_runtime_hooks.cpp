@@ -62,4 +62,15 @@ hipError_t hipFree_sim(void* ptr) {
   return hip_error;
 }
 
+hipError_t hipMemcpy_sim(void* dst, const void* src, size_t sizeBytes, hipMemcpyKind kind) {
 
+  auto func_sptr = hipRuntimeHookFunc<decltype(hipMemcpy_sim)>("hipMemcpy_sim").get();
+
+  if (func_sptr == nullptr) {
+    return hipErrorInvalidValue;
+  }
+
+  hipError_t hip_error = func_sptr(dst, src, sizeBytes, kind);
+
+  return hip_error;
+}
