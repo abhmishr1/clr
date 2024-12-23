@@ -36,4 +36,17 @@ hipError_t hipLaunchKernel_sim(const uint8_t* kernelBin, size_t binSize,
   return hip_error;
 }
 
+hipError_t hipMalloc_sim(void** ptr, size_t sizeBytes, unsigned int flags) {
+
+  auto func_sptr = hipRuntimeHookFunc<decltype(hipMalloc_sim)>("hipMalloc_sim").get();
+
+  if (func_sptr == nullptr) {
+    return hipErrorInvalidValue;
+  }
+
+  hipError_t hip_error = func_sptr(ptr, sizeBytes, flags);
+
+  return hip_error;
+}
+
 

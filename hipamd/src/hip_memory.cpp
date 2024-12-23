@@ -319,7 +319,13 @@ hipError_t ihipMalloc(void** ptr, size_t sizeBytes, unsigned int flags)
   }
 
   if (HIP_USE_SIM == 0) {
-    *ptr = malloc(sizeBytes);
+
+    hipError_t hip_error = hipMalloc_sim(ptr, sizeBytes, flags);
+
+    if (hip_error != hipSuccess) {
+      *ptr = malloc(sizeBytes);
+    }
+
     return hipSuccess;
   }
 

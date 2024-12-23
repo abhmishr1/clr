@@ -20,3 +20,11 @@ extern "C" hipError_t hipLaunchKernel_sim(const uint8_t* kernelBin,
     return hipSuccess;
 }
 
+extern "C" hipError_t hipMalloc_sim(void** ptr, size_t sizeBytes, unsigned int flags) {
+
+    std::cout << "FFM implementation of hipMalloc_sim" << std::endl;
+    *ptr = malloc(sizeBytes);
+
+    return hipSuccess;
+}
+
