@@ -19,7 +19,6 @@
  THE SOFTWARE. */
 
 #include <hip/hip_runtime.h>
-#include <hip/hip_runtime_hooks.h>
 #include <hip/texture_types.h>
 #include "hip_platform.hpp"
 #include "hip_internal.hpp"

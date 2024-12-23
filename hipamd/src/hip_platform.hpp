@@ -23,6 +23,7 @@
 #include "hip_fatbin.hpp"
 #include "device/device.hpp"
 #include "hip_code_object.hpp"
+#include "hip_runtime_hooks.hpp"
 
 namespace hip_impl {
 
