@@ -3424,7 +3424,11 @@ hipError_t ihipMemset(void* dst, int64_t value, size_t valueSize, size_t sizeByt
     }
 
     if (HIP_USE_SIM == 0) {
-      std::memset(dst, value, sizeBytes);
+
+      hipError_t hip_error = hipMemset_sim(dst, value, valueSize, sizeBytes, stream);
+      if (hip_error != hipSuccess) {
+        std::memset(dst, value, sizeBytes);
+      }
       break;
     }
 

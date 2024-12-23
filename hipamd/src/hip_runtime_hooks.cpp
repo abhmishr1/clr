@@ -74,3 +74,17 @@ hipError_t hipMemcpy_sim(void* dst, const void* src, size_t sizeBytes, hipMemcpy
 
   return hip_error;
 }
+
+hipError_t hipMemset_sim(void* dst, int64_t value, size_t valueSize, size_t sizeBytes,
+                        hipStream_t stream) {
+
+  auto func_sptr = hipRuntimeHookFunc<decltype(hipMemset_sim)>("hipMemset_sim").get();
+
+  if (func_sptr == nullptr) {
+    return hipErrorInvalidValue;
+  }
+
+  hipError_t hip_error = func_sptr(dst, value, valueSize, sizeBytes, stream);
+
+  return hip_error;
+}

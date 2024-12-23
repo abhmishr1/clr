@@ -61,4 +61,7 @@ hipError_t hipFree_sim(void* ptr);
 
 hipError_t hipMemcpy_sim(void* dst, const void* src, size_t sizeBytes, hipMemcpyKind kind);
 
+hipError_t hipMemset_sim(void* dst, int64_t value, size_t valueSize, size_t sizeBytes,
+                        hipStream_t stream);
+
 

@@ -45,3 +45,12 @@ extern "C" hipError_t hipMemcpy_sim(void* dst, const void* src, size_t sizeBytes
     return hipSuccess;
 }
 
+extern "C" hipError_t hipMemset_sim(void* dst, int64_t value, size_t valueSize, size_t sizeBytes,
+                        hipStream_t stream) {
+
+    std::cout << "FFM implementation of hipMemset_sim" << std::endl;
+    std::memset(dst, value, sizeBytes);
+
+    return hipSuccess;
+}
+
