@@ -83,7 +83,13 @@ hipError_t ihipFree(void *ptr) {
   }
 
   if (HIP_USE_SIM == 0) {
-    free(ptr);
+
+    hipError_t hip_error = hipFree_sim(ptr);
+
+    if (hip_error != hipSuccess) {
+      free(ptr);
+    }
+
     return hipSuccess;
   }
 

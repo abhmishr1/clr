@@ -28,3 +28,11 @@ extern "C" hipError_t hipMalloc_sim(void** ptr, size_t sizeBytes, unsigned int f
     return hipSuccess;
 }
 
+extern "C" hipError_t hipFree_sim(void* ptr) {
+
+    std::cout << "FFM implementation of hipFree_sim" << std::endl;
+    free(ptr);
+
+    return hipSuccess;
+}
+

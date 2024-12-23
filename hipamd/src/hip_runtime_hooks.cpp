@@ -49,4 +49,17 @@ hipError_t hipMalloc_sim(void** ptr, size_t sizeBytes, unsigned int flags) {
   return hip_error;
 }
 
+hipError_t hipFree_sim(void* ptr) {
+
+  auto func_sptr = hipRuntimeHookFunc<decltype(hipFree_sim)>("hipFree_sim").get();
+
+  if (func_sptr == nullptr) {
+    return hipErrorInvalidValue;
+  }
+
+  hipError_t hip_error = func_sptr(ptr);
+
+  return hip_error;
+}
+
 

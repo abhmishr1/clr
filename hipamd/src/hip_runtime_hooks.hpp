@@ -57,4 +57,6 @@ hipError_t hipLaunchKernel_sim(const uint8_t* kernelBin, size_t binSize,
 
 hipError_t hipMalloc_sim(void** ptr, size_t sizeBytes, unsigned int flags);
 
+hipError_t hipFree_sim(void* ptr);
+
 
